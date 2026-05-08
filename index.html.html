@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ImmoTrack — Tableau de Bord</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0F1117; --surface: #1A1D27; --surface2: #22263A; --border: #2A2F45;
+      --text: #E8EAF0; --muted: #6B7280; --green: #10B981; --green-bg: #0D2E22;
+      --orange: #F59E0B; --orange-bg: #2D2008; --red: #EF4444; --red-bg: #2D0E0E;
+      --blue: #6366F1; --blue-bg: #1A1B3A; --accent: #818CF8;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* SIDEBAR */
+    .sidebar { position:fixed; left:0; top:0; bottom:0; width:240px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:24px 0; z-index:100; }
+    .logo { padding:0 20px 24px; border-bottom:1px solid var(--border); font-size:18px; font-weight:700; letter-spacing:-0.5px; }
+    .logo span { color:var(--accent); }
+    .nav { padding:16px 12px; flex:1; }
+    .nav-label { font-size:10px; font-weight:600; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; padding:8px 8px 4px; }
+    .nav-item { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; cursor:pointer; font-size:13.5px; font-weight:500; color:var(--muted); transition:all .15s; margin-bottom:2px; }
+    .nav-item:hover { background:var(--surface2); color:var(--text); }
+    .nav-item.active { background:var(--blue-bg); color:var(--accent); }
+    .nav-item .icon { font-size:16px; width:20px; text-align:center; }
+    .user-section { padding:16px 20px; border-top:1px solid var(--border); font-size:12px; color:var(--muted); }
+    .user-name { font-weight:600; color:var(--text); font-size:13px; }
+
+    /* MAIN */
+    .main { margin-left:240px; padding:32px 36px; }
+    .page-header { margin-bottom:32px; }
+    .page-title { font-size:26px; font-weight:700; letter-spacing:-0.5px; }
+    .page-date { font-size:13px; color:var(--muted); margin-top:4px; }
+
+    /* KPI */
+    .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+    .kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px 22px; }
+    .kpi-label { font-size:12px; color:var(--muted); font-weight:500; margin-bottom:10px; }
+    .kpi-value { font-size:32px; font-weight:700; letter-spacing:-1px; }
+    .kpi-sub { font-size:12px; color:var(--muted); margin-top:6px; }
+    .kpi-card.green .kpi-value { color:var(--green); }
+    .kpi-card.orange .kpi-value { color:var(--orange); }
+    .kpi-card.blue .kpi-value { color:var(--accent); }
+
+    /* BIG ROW */
+    .big-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px; }
+    .big-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; }
+    .big-card-title { font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px; }
+    .big-card-amount { font-size:36px; font-weight:700; letter-spacing:-1.5px; color:var(--green); }
+    .big-card-sub { font-size:12px; color:var(--muted); margin-top:6px; }
+    .progress-bar { height:4px; background:var(--border); border-radius:99px; margin-top:14px; overflow:hidden; }
+    .progress-fill { height:100%; background:var(--green); border-radius:99px; }
+
+    /* TABLE */
+    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .section-title { font-size:16px; font-weight:600; }
+    .btn-add { background:var(--blue); color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .btn-add:hover { opacity:.85; }
+
+    .biens-table { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:visible; margin-bottom:28px; }
+    .table-head { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 100px 120px 100px; padding:12px 20px; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-radius:14px 14px 0 0; overflow:hidden; }
+    .table-row { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 100px 120px 100px; padding:14px 20px; border-bottom:1px solid var(--border); font-size:13px; align-items:center; transition:background .1s; }
+    .table-row:last-child { border-bottom:none; border-radius:0 0 14px 14px; }
+    .table-row:hover { background:var(--surface2); }
+
+    .bien-name { font-weight:600; font-size:13.5px; }
+    .bien-addr { font-size:11px; color:var(--muted); margin-top:2px; }
+
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:600; }
+    .badge.go { background:var(--green-bg); color:var(--green); }
+    .badge.limite { background:var(--orange-bg); color:var(--orange); }
+    .badge.nogo { background:var(--red-bg); color:var(--red); }
+
+    .statut-badge { display:inline-flex; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:600; cursor:pointer; user-select:none; }
+    .statut-badge.prospect { background:var(--blue-bg); color:var(--accent); }
+    .statut-badge.visite { background:#1A2D1A; color:#4ADE80; }
+    .statut-badge.offre { background:#2D1A0E; color:#FB923C; }
+    .statut-badge.refuse { background:var(--red-bg); color:var(--red); }
+    .statut-badge.gagne { background:var(--green-bg); color:var(--green); }
+
+    .prix-m2 { font-family:'DM Mono',monospace; font-size:12px; color:var(--muted); }
+    .marge { font-family:'DM Mono',monospace; font-size:12px; font-weight:500; }
+    .marge.pos { color:var(--green); }
+    .marge.neg { color:var(--red); }
+
+    .action-btns { display:flex; gap:6px; }
+    .action-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:5px 10px; border-radius:6px; font-size:11px; cursor:pointer; font-family:inherit; transition:all .15s; white-space:nowrap; }
+    .action-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .action-btn.danger:hover { border-color:var(--red); color:var(--red); }
+
+    /* STATUT DROPDOWN */
+    .statut-wrap { position:relative; }
+    .statut-menu { display:none; position:fixed; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:6px; z-index:99999; min-width:140px; box-shadow:0 8px 24px rgba(0,0,0,.4); }
+    .statut-menu-item { padding:7px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
+    .statut-menu-item:hover { background:var(--border); }
+    .statut-menu-item.prospect { color:var(--accent); }
+    .statut-menu-item.visite { color:#4ADE80; }
+    .statut-menu-item.offre { color:#FB923C; }
+    .statut-menu-item.refuse { color:var(--red); }
+    .statut-menu-item.gagne { color:var(--green); }
+
+    /* ANALYSE PAGE */
+    .analyse-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
+    .back-btn { background:var(--surface); border:1px solid var(--border); color:var(--text); padding:8px 16px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .back-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+    .analyse-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .analyse-section { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+    .analyse-section.full { grid-column:1/-1; }
+    .analyse-section-title { background:var(--blue-bg); border-bottom:1px solid var(--border); padding:12px 18px; font-size:13px; font-weight:700; color:var(--accent); letter-spacing:.02em; }
+    .analyse-row { display:flex; align-items:center; justify-content:space-between; padding:11px 18px; border-bottom:1px solid var(--border); font-size:13px; gap:12px; }
+    .analyse-row:last-child { border-bottom:none; }
+    .analyse-row-label { color:var(--muted); font-size:12.5px; flex:1; }
+    .analyse-row-value { font-weight:600; font-family:'DM Mono',monospace; font-size:13px; text-align:right; }
+    .analyse-row-note { font-size:11px; color:var(--muted); font-style:italic; text-align:right; max-width:200px; }
+    .analyse-input { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:6px; font-size:13px; font-family:'DM Mono',monospace; font-weight:600; text-align:right; width:130px; outline:none; }
+    .analyse-input::-webkit-outer-spin-button,
+    .analyse-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    .analyse-input[type=number] { -moz-appearance:textfield; appearance:textfield; }
+    .analyse-input:focus { border-color:var(--accent); }
+    .analyse-input.blue { color:#93C5FD; }
+    .analyse-select { background:var(--surface2); border:1px solid var(--border); color:var(--accent); padding:6px 10px; border-radius:6px; font-size:13px; font-weight:700; font-family:inherit; outline:none; cursor:pointer; }
+
+    .gonogo-row { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); }
+    .gonogo-row:last-child { border-bottom:none; }
+    .gonogo-label { font-size:13px; font-weight:600; }
+    .gonogo-badge { font-size:13px; font-weight:700; padding:6px 18px; border-radius:8px; }
+    .gonogo-badge.go { background:var(--green-bg); color:var(--green); }
+    .gonogo-badge.limite { background:var(--orange-bg); color:var(--orange); }
+    .gonogo-badge.nogo { background:var(--red-bg); color:var(--red); }
+
+    .highlight-green { color:var(--green); }
+    .highlight-orange { color:var(--orange); }
+    .highlight-red { color:var(--red); }
+    .highlight-blue { color:var(--accent); }
+
+    .save-bar { position:sticky; bottom:0; background:var(--bg); border-top:1px solid var(--border); padding:16px 0; display:flex; gap:12px; justify-content:flex-end; margin-top:24px; }
+    .btn-save { background:var(--blue); border:none; color:#fff; padding:10px 28px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .btn-save:hover { opacity:.9; }
+
+    /* COMPARAISON */
+    .compare-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:28px; }
+    .compare-grid { display:grid; gap:10px; margin-top:16px; }
+    .compare-row { display:flex; align-items:center; gap:12px; font-size:13px; }
+    .compare-name { width:200px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .compare-bar-wrap { flex:1; height:8px; background:var(--border); border-radius:99px; overflow:hidden; }
+    .compare-bar-fill { height:100%; border-radius:99px; transition:width .8s ease; }
+    .compare-pct { width:60px; text-align:right; font-family:'DM Mono',monospace; font-size:12px; }
+
+    .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+    .empty-state .emoji { font-size:48px; margin-bottom:16px; }
+
+    /* SIMULATEUR */
+    .sim-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; max-width:560px; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .form-group { display:flex; flex-direction:column; gap:6px; }
+    .form-label { font-size:12px; font-weight:600; color:var(--muted); }
+    .form-input { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:8px; font-size:13px; font-family:inherit; outline:none; }
+    .form-input:focus { border-color:var(--accent); }
+    .result-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:20px 0; }
+    .result-item { background:var(--surface2); border-radius:10px; padding:14px 16px; }
+    .result-item-label { font-size:11px; color:var(--muted); margin-bottom:4px; }
+    .result-item-value { font-size:18px; font-weight:700; font-family:'DM Mono',monospace; }
+    .result-item-value.green { color:var(--green); }
+    .result-item-value.orange { color:var(--orange); }
+    .result-item-value.red { color:var(--red); }
+    .gonogo-bar { background:var(--surface2); border-radius:10px; padding:16px; display:flex; align-items:center; justify-content:space-between; margin:8px 0; }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">🏠 Immo<span>Track</span></div>
+  <nav class="nav">
+    <div class="nav-label">Suivi</div>
+    <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> Tableau de bord</div>
+    <div class="nav-item" onclick="showPage('biens')"><span class="icon">🏘️</span> Mes biens</div>
+    <div class="nav-item" onclick="showPage('comparaison')"><span class="icon">⚖️</span> Comparaison</div>
+    <div class="nav-label" style="margin-top:16px">Analyse</div>
+    <div class="nav-item" onclick="showPage('simulateur')"><span class="icon">🧮</span> Simulateur</div>
+  </nav>
+  <div class="user-section">
+    <div class="user-name">Manon Jahan</div>
+    <div>Investisseur achat-revente</div>
+  </div>
+</aside>
+
+<main class="main" id="main-content"></main>
+
+<div id="statut-menus"></div>
+
+<script>
+// ═══ DONNÉES ═══
+function getBiens() { try { return JSON.parse(localStorage.getItem('immotrack_biens')||'[]'); } catch(e) { return []; } }
+function saveBiens(b) { localStorage.setItem('immotrack_biens', JSON.stringify(b)); }
+
+function initDemo() {
+  if (getBiens().length > 0) return;
+  saveBiens([
+    { id:1, nom:"Appartement 2P Saint-Denis", adresse:"Saint-Denis 93200 — La Plaine", prix:187000, surface:48, travaux:35000, prixRevente:240000, prixM2Ref:3900, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:150000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, tauxNotaire:0.075, tauxPV:0.362, statut:"visite", notes:"Bon état général, cuisine à refaire", date:"2026-04-15" },
+    { id:2, nom:"T3 Pantin Ourcq", adresse:"Pantin 93500 — Ourcq", prix:320000, surface:62, travaux:45000, prixRevente:420000, prixM2Ref:6500, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:280000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, tauxNotaire:0.075, tauxPV:0.362, statut:"offre", notes:"Offre à 295 000€ faite", date:"2026-04-28" },
+    { id:3, nom:"Studio Montreuil Mairie", adresse:"Montreuil 93100 — Mairie", prix:210000, surface:31, travaux:20000, prixRevente:250000, prixM2Ref:6800, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:180000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, tauxNotaire:0.075, tauxPV:0.362, statut:"refuse", notes:"Vendeur n'a pas accepté", date:"2026-03-10" }
+  ]);
+}
+
+// ═══ CALCULS COMPLETS ═══
+function calcul(b) {
+  const notaire = Math.round(b.prix * (b.tauxNotaire||0.075));
+  const fraisAgenceMt = b.fraisAgence ? Math.round(b.prixRevente * (b.tauxAgence||0.04)) : 0;
+  const interetsMt = b.interets ? Math.round((b.montantEmprunte||0) * (b.tauxInteret||0.035) * (b.dureefranchise||12)/12) : 0;
+  const coutAcquisition = b.prix + notaire;
+  const coutOperation = coutAcquisition + (b.travaux||0);
+  const coutTotal = coutOperation + fraisAgenceMt + interetsMt;
+  const margeBrute = b.prixRevente - coutOperation;
+  const margeBrutePct = b.prixRevente > 0 ? margeBrute/b.prixRevente : 0;
+  const impo = margeBrute > 0 ? Math.round(margeBrute * (b.tauxPV||0.362)) : 0;
+  const margeNette = margeBrute - impo - fraisAgenceMt - interetsMt;
+  const margeNettePct = b.prixRevente > 0 ? margeNette/b.prixRevente : 0;
+  const prixM2Achat = b.surface > 0 ? Math.round(b.prix/b.surface) : 0;
+  const prixM2Cout = b.surface > 0 ? Math.round(coutOperation/b.surface) : 0;
+  const prixM2Revente = b.surface > 0 ? Math.round(b.prixRevente/b.surface) : 0;
+  const gonogoBrut = margeBrutePct >= 0.20 ? 'go' : margeBrutePct >= 0.18 ? 'limite' : 'nogo';
+  const gonogoNet = margeNettePct >= 0.15 ? 'go' : margeNettePct >= 0.12 ? 'limite' : 'nogo';
+  // Prix offre max
+  const cibleBrute = b.margeCibleBrute || 0.20;
+  const cibleNette = b.margeCibleNette || 0.15;
+  const prixMaxBrute = (b.prixRevente*(1-cibleBrute) - (b.travaux||0)) / 1.075;
+  const prixMaxNette = ((b.prixRevente*(1-cibleNette/(1-0.362))) - (b.travaux||0)) / 1.075;
+  const prixOffreConseille = Math.min(prixMaxBrute, prixMaxNette);
+  const decote = b.prix > 0 ? (b.prix - prixOffreConseille)/b.prix : 0;
+  const rendBrut = b.loyer > 0 && b.prixRevente > 0 ? b.loyer/b.prixRevente : 0;
+  const rendNet = b.loyer > 0 && b.prixRevente > 0 ? (b.loyer*0.7)/b.prixRevente : 0;
+  return { notaire, fraisAgenceMt, interetsMt, coutAcquisition, coutOperation, coutTotal, margeBrute, margeBrutePct, impo, margeNette, margeNettePct, prixM2Achat, prixM2Cout, prixM2Revente, gonogoBrut, gonogoNet, prixMaxBrute, prixMaxNette, prixOffreConseille, decote, rendBrut, rendNet };
+}
+
+const fmtE = n => n !== undefined && n !== null && !isNaN(n) ? Math.round(n).toLocaleString('fr-FR') + ' €' : '—';
+const fmtP = n => n ? (n*100).toFixed(1)+'%' : '—';
+const statutLabel = { prospect:'Prospect', visite:'Visité', offre:'Offre faite', refuse:'Refusé', gagne:'Acquis' };
+const gLabel = { go:'✅ GO', limite:'⚠️ LIMITE', nogo:'❌ NO-GO' };
+
+// ═══ NAVIGATION ═══
+let currentPage = 'dashboard';
+let currentBienId = null;
+
+function showPage(page, bienId) {
+  currentPage = page;
+  currentBienId = bienId || null;
+  document.querySelectorAll('.nav-item').forEach((el,i) => {
+    el.classList.toggle('active', ['dashboard','biens','comparaison','simulateur'][i] === page);
+  });
+  render();
+}
+
+function render() {
+  const main = document.getElementById('main-content');
+  const biens = getBiens();
+  const today = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  if (currentPage === 'dashboard') renderDashboard(main, biens, today);
+  else if (currentPage === 'biens') renderBiens(main, biens);
+  else if (currentPage === 'analyse') renderAnalyse(main, biens);
+  else if (currentPage === 'comparaison') renderComparaison(main, biens);
+  else if (currentPage === 'simulateur') renderSimulateur(main);
+}
+
+// ═══ DASHBOARD ═══
+function renderDashboard(main, biens, today) {
+  const actifs = biens.filter(b=>b.statut!=='refuse').length;
+  const offres = biens.filter(b=>b.statut==='offre').length;
+  const gagnes = biens.filter(b=>b.statut==='gagne').length;
+  const biensAcquis = biens.filter(b=>b.statut==='gagne');
+  const totalInvesti = biensAcquis.reduce((s,b)=>s+(b.prix||0),0);
+  const totalMarge = biensAcquis.reduce((s,b)=>s+calcul(b).margeNette,0);
+  main.innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Tableau de bord</div>
+      <div class="page-date">Bonjour — ${today}</div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Biens suivis</div><div class="kpi-value">${biens.length}</div><div class="kpi-sub">${actifs} actifs en cours</div></div>
+      <div class="kpi-card orange"><div class="kpi-label">Offres faites</div><div class="kpi-value">${offres}</div><div class="kpi-sub">en attente de réponse</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Biens acquis</div><div class="kpi-value">${gagnes}</div><div class="kpi-sub">chantier(s) en cours</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Refusés</div><div class="kpi-value">${biens.filter(b=>b.statut==='refuse').length}</div><div class="kpi-sub">ce mois-ci</div></div>
+    </div>
+    <div class="big-row">
+      <div class="big-card">
+        <div class="big-card-title">Capital engagé total</div>
+        <div class="big-card-amount">${totalInvesti>0?(totalInvesti/1000000).toFixed(2)+' M€':'0 €'}</div>
+        <div class="big-card-sub">Prix d'achat cumulé des biens acquis</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,totalInvesti/3000000*100)}%"></div></div>
+      </div>
+      <div class="big-card">
+        <div class="big-card-title">Marge nette estimée totale</div>
+        <div class="big-card-amount" style="color:${totalMarge>0?'var(--green)':'var(--red)'}">${totalMarge>0?'+':''}${fmtE(totalMarge)}</div>
+        <div class="big-card-sub">Après impôt PV sur les biens acquis uniquement</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,Math.max(0,totalMarge/500000*100))}%"></div></div>
+      </div>
+    </div>
+    ${renderBiensTable(biens, 5, true)}`;
+}
+
+// ═══ TABLE BIENS ═══
+function renderBiens(main, biens) {
+  main.innerHTML = `
+    <div class="page-header"><div class="page-title">Mes biens</div><div class="page-date">Tous les biens suivis</div></div>
+    <div class="section-header">
+      <div class="section-title">${biens.length} bien${biens.length>1?'s':''}</div>
+      <button class="btn-add" onclick="ajouterBien()">+ Ajouter manuellement</button>
+    </div>
+    ${renderBiensTable(biens, null, false)}`;
+}
+
+function renderBiensTable(biens, limit, mini) {
+  const items = limit ? biens.slice(0,limit) : biens;
+  return `
+    <div class="section-header">
+      <div class="section-title">${mini?'Biens récents':''}</div>
+      ${mini?'<button class="btn-add" style="background:transparent;border:1px solid var(--border);color:var(--muted)" onclick="showPage(\'biens\')">Voir tous →</button>':''}
+    </div>
+    <div class="biens-table">
+      <div class="table-head"><div>Bien</div><div>Surface</div><div>Prix achat</div><div>Revente</div><div>Marge nette</div><div>Go/No-Go</div><div>Statut</div><div>Actions</div></div>
+      ${items.length===0?`<div style="padding:48px;text-align:center;color:var(--muted)">Aucun bien — clique sur Simuler depuis LeBonCoin</div>`:
+        items.map(b => {
+          const c = calcul(b);
+          return `<div class="table-row">
+            <div><div class="bien-name">${b.nom}</div><div class="bien-addr">${b.adresse}</div></div>
+            <div class="prix-m2">${b.surface} m²<br>${c.prixM2Achat.toLocaleString('fr-FR')} €/m²</div>
+            <div class="prix-m2">${fmtE(b.prix)}</div>
+            <div class="prix-m2">${fmtE(b.prixRevente)}</div>
+            <div class="marge ${c.margeNette>0?'pos':'neg'}">${fmtE(c.margeNette)}<br>${fmtP(c.margeNettePct)}</div>
+            <div><span class="badge ${c.gonogoBrut}">${gLabel[c.gonogoBrut]}</span></div>
+            <div class="statut-wrap">
+              <span class="statut-badge ${b.statut}" onclick="toggleStatutMenu(${b.id},this)">${statutLabel[b.statut]} ▾</span>
+              <div class="statut-menu" id="sm-${b.id}">
+                ${Object.entries(statutLabel).map(([k,v])=>`<div class="statut-menu-item ${k}" onclick="changeStatut(${b.id},'${k}')">${v}</div>`).join('')}
+              </div>
+            </div>
+            <div class="action-btns">
+              <button class="action-btn" onclick="showPage('analyse',${b.id})">📋 Analyse</button>
+              <button class="action-btn danger" onclick="supprimerBien(${b.id})">🗑</button>
+            </div>
+          </div>`;
+        }).join('')}
+    </div>`;
+}
+
+// ═══ ANALYSE COMPLÈTE ═══
+function renderAnalyse(main, biens) {
+  const b = biens.find(x=>x.id===currentBienId);
+  if (!b) { showPage('biens'); return; }
+  const c = calcul(b);
+  const colorB = c.gonogoBrut==='go'?'highlight-green':c.gonogoBrut==='limite'?'highlight-orange':'highlight-red';
+  const colorN = c.gonogoNet==='go'?'highlight-green':c.gonogoNet==='limite'?'highlight-orange':'highlight-red';
+
+  main.innerHTML = `
+    <div class="analyse-header">
+      <button class="back-btn" onclick="showPage('biens')">← Retour</button>
+      <div>
+        <div class="page-title">${b.nom}</div>
+        <div class="page-date">${b.adresse}</div>
+      </div>
+    </div>
+
+    <div class="analyse-grid">
+
+      <!-- ① Paramètres constants -->
+      <div class="analyse-section">
+        <div class="analyse-section-title">① Paramètres constants</div>
+        <div class="analyse-row" style="flex-wrap:wrap;gap:8px">
+          <div class="analyse-row-label">Taux imposition plus-value (%)</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="analyse-select" onchange="(function(v){var el=document.getElementById('input-tauxPV');if(v!=='custom'){updateBienField(${b.id},'tauxPV',parseFloat(v));el.value=(parseFloat(v)*100).toFixed(1);}el.style.display=v==='custom'?'inline-block':'none';})(this.value)">
+              <option value="0.362" ${!(b.tauxPV&&b.tauxPV!==0.362&&b.tauxPV!==0.15&&b.tauxPV!==0.25)?'selected':''}>Particulier — 36,2%</option>
+              <option value="0.15" ${b.tauxPV===0.15?'selected':''}>Société IS 15% (PME)</option>
+              <option value="0.25" ${b.tauxPV===0.25?'selected':''}>Société IS 25%</option>
+              <option value="custom" ${b.tauxPV&&b.tauxPV!==0.362&&b.tauxPV!==0.15&&b.tauxPV!==0.25?'selected':''}>Personnalisé</option>
+            </select>
+            <input id="input-tauxPV" class="analyse-input blue" type="number" step="0.1"
+              value="${((b.tauxPV||0.362)*100).toFixed(1)}"
+              style="display:${b.tauxPV&&b.tauxPV!==0.362&&b.tauxPV!==0.15&&b.tauxPV!==0.25?'inline-block':'none'};width:90px"
+              oninput="updateBienField(${b.id},'tauxPV',this.value/100)">
+          </div>
+          <div class="analyse-row-note">Particulier : IR 19% + PS 17,2%. IS PME : 15% jusqu'à 42k€ de bénéfice</div>
+        </div>
+        <div class="analyse-row"><div class="analyse-row-label">Taux frais de notaire (%)</div><input class="analyse-input blue" type="number" value="${((b.tauxNotaire||0.075)*100).toFixed(1)}" step="0.1" oninput="updateBienField(${b.id},'tauxNotaire',this.value/100)"><div class="analyse-row-note">7,5% pour ancien entre 150k-350k€ (8% autres)</div></div>
+        <div class="analyse-row">
+          <div class="analyse-row-label">Loyer annuel brut (€)</div>
+          <input class="analyse-input blue" type="number" value="${b.loyer||''}" placeholder="0" id="a-loyer" oninput="updateBienField(${b.id},'loyer',this.value)">
+          <div class="analyse-row-note">Laisser vide si pas de scénario locatif</div>
+        </div>
+      </div>
+
+      <!-- ② Entrées variables -->
+      <div class="analyse-section">
+        <div class="analyse-section-title">② Entrées variables</div>
+        <div class="analyse-row"><div class="analyse-row-label">Prix d'achat affiché (€)</div><input class="analyse-input blue" type="number" value="${b.prix}" id="a-prix" oninput="updateBienField(${b.id},'prix',this.value)"><div class="analyse-row-note">Prix affiché sur LeBonCoin</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Frais de notaire (€)</div><div class="analyse-row-value"><span id="rv-notaire">${fmtE(c.notaire)}</span></div><div class="analyse-row-note">= Prix × 7,5%</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Travaux estimés (€)</div><input class="analyse-input blue" type="number" value="${b.travaux||''}" placeholder="0" id="a-travaux" oninput="updateBienField(${b.id},'travaux',this.value)"><div class="analyse-row-note">À estimer après visite</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Prix de revente visé (€)</div><input class="analyse-input blue" type="number" value="${b.prixRevente}" id="a-revente" oninput="updateBienField(${b.id},'prixRevente',this.value)"><div class="analyse-row-note">Prix marché cible après travaux</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Surface (m²)</div><input class="analyse-input blue" type="number" value="${b.surface}" id="a-surface" oninput="updateBienField(${b.id},'surface',this.value)"><div class="analyse-row-note">Surface habitable</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Référence marché m² (€/m²)</div><input class="analyse-input blue" type="number" value="${b.prixM2Ref}" id="a-ref" oninput="updateBienField(${b.id},'prixM2Ref',this.value)"><div class="analyse-row-note">DVF 2024 — médiane secteur</div></div>
+      </div>
+
+      <!-- ③ Options activables -->
+      <div class="analyse-section full">
+        <div class="analyse-section-title">③ Options activables</div>
+        <div class="analyse-row">
+          <div class="analyse-row-label">Frais d'agence à la revente (4%)</div>
+          <select class="analyse-select" onchange="updateBienField(${b.id},'fraisAgence',this.value==='OUI')">
+            <option ${!b.fraisAgence?'selected':''}>NON</option>
+            <option ${b.fraisAgence?'selected':''}>OUI</option>
+          </select>
+          <div class="analyse-row-note">Activer si vous passez par une agence</div>
+        </div>
+        ${b.fraisAgence?`<div class="analyse-row"><div class="analyse-row-label">↳ Taux frais d'agence (%)</div><input class="analyse-input blue" type="number" value="${(b.tauxAgence*100).toFixed(1)}" step="0.1" oninput="updateBienField(${b.id},'tauxAgence',this.value/100)"><div class="analyse-row-note">4% par défaut</div></div>`:''}
+        <div class="analyse-row">
+          <div class="analyse-row-label">Intérêts intercalaires (franchise prêt)</div>
+          <select class="analyse-select" onchange="updateBienField(${b.id},'interets',this.value==='OUI')">
+            <option ${!b.interets?'selected':''}>NON</option>
+            <option ${b.interets?'selected':''}>OUI</option>
+          </select>
+          <div class="analyse-row-note">Activer si vous différez le remboursement capital</div>
+        </div>
+        ${b.interets?`
+        <div class="analyse-row"><div class="analyse-row-label">↳ Montant emprunté (€)</div><input class="analyse-input blue" type="number" value="${b.montantEmprunte||0}" oninput="updateBienField(${b.id},'montantEmprunte',this.value)"><div class="analyse-row-note">Capital emprunté hors apport</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">↳ Taux d'intérêt annuel (%)</div><input class="analyse-input blue" type="number" value="${((b.tauxInteret||0.035)*100).toFixed(1)}" step="0.1" oninput="updateBienField(${b.id},'tauxInteret',this.value/100)"><div class="analyse-row-note">Taux nominal hors assurance</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">↳ Durée franchise (mois)</div><input class="analyse-input blue" type="number" value="${b.dureefranchise||12}" oninput="updateBienField(${b.id},'dureefranchise',this.value)"><div class="analyse-row-note">Durée pendant laquelle vous ne remboursez que les intérêts</div></div>
+        `:''}
+      </div>
+
+      <!-- ④ Coûts totaux -->
+      <div class="analyse-section">
+        <div class="analyse-section-title">④ Coûts totaux calculés</div>
+        <div class="analyse-row"><div class="analyse-row-label">Coût total d'acquisition (€)</div><div class="analyse-row-value"><span id="rv-coutAcq">${fmtE(c.coutAcquisition)}</span></div><div class="analyse-row-note">Achat + notaire</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Coût total de l'opération (€)</div><div class="analyse-row-value"><span id="rv-coutOp">${fmtE(c.coutOperation)}</span></div><div class="analyse-row-note">Acquisition + travaux</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Frais d'agence revente (€)</div><div class="analyse-row-value"><span id="rv-agence">${fmtE(c.fraisAgenceMt)}</span></div><div class="analyse-row-note">Activé si OUI ci-dessus</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Intérêts intercalaires (€)</div><div class="analyse-row-value"><span id="rv-interets">${fmtE(c.interetsMt)}</span></div><div class="analyse-row-note">Activé si OUI ci-dessus</div></div>
+        <div class="analyse-row"><div class="analyse-row-label" style="font-weight:600;color:var(--text)">Coût total réel (€)</div><div class="analyse-row-value highlight-orange"><span id="rv-coutTotal">${fmtE(c.coutTotal)}</span></div><div class="analyse-row-note">Tous frais inclus</div></div>
+      </div>
+
+      <!-- ⑤ Résultats -->
+      <div class="analyse-section">
+        <div class="analyse-section-title">⑤ Résultats</div>
+        <div class="analyse-row"><div class="analyse-row-label">Marge brute (€)</div><div class="analyse-row-value ${c.margeBrute>0?'highlight-green':'highlight-red'}"><span id="rv-margeBruteE">${fmtE(c.margeBrute)}</span></div><div class="analyse-row-note">Prix revente − (achat + notaire + travaux)</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Marge brute (%)</div><div class="analyse-row-value ${colorB}"><span id="rv-margeBrutePct">${fmtP(c.margeBrutePct)}</span></div><div class="analyse-row-note">/ Prix de revente</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Imposition plus-value (€)</div><div class="analyse-row-value"><span id="rv-impo">${fmtE(c.impo)}</span></div><div class="analyse-row-note">36,2% de la marge brute si positive</div></div>
+        <div class="analyse-row"><div class="analyse-row-label" style="font-weight:600;color:var(--text)">Marge nette (€)</div><div class="analyse-row-value ${c.margeNette>0?'highlight-green':'highlight-red'}"><span id="rv-margeNetteE">${fmtE(c.margeNette)}</span></div><div class="analyse-row-note">Marge brute − impôt PV − options</div></div>
+        <div class="analyse-row"><div class="analyse-row-label" style="font-weight:600;color:var(--text)">Marge nette (%)</div><div class="analyse-row-value ${colorN}"><span id="rv-margeNettePct">${fmtP(c.margeNettePct)}</span></div><div class="analyse-row-note">/ Prix de revente</div></div>
+      </div>
+
+      <!-- ⑥ Prix offre max -->
+      <div class="analyse-section">
+        <div class="analyse-section-title">⑥ Prix d'offre maximum à faire</div>
+        <div class="analyse-row"><div class="analyse-row-label">Marge nette cible (%)</div><input class="analyse-input blue" type="number" value="${((b.margeCibleNette||0.15)*100).toFixed(0)}" step="1" oninput="updateBienField(${b.id},'margeCibleNette',this.value/100)"><div class="analyse-row-note">Marge nette minimum acceptable</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Marge brute cible (%)</div><input class="analyse-input blue" type="number" value="${((b.margeCibleBrute||0.20)*100).toFixed(0)}" step="1" oninput="updateBienField(${b.id},'margeCibleBrute',this.value/100)"><div class="analyse-row-note">Marge brute minimum acceptable</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Prix max selon marge NETTE (€)</div><div class="analyse-row-value highlight-blue"><span id="rv-prixMaxNette">${fmtE(c.prixMaxNette)}</span></div><div class="analyse-row-note">→ Prix à ne pas dépasser</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Prix max selon marge BRUTE (€)</div><div class="analyse-row-value highlight-blue"><span id="rv-prixMaxBrute">${fmtE(c.prixMaxBrute)}</span></div><div class="analyse-row-note">→ Prix à ne pas dépasser</div></div>
+        <div class="analyse-row" style="background:var(--blue-bg)"><div class="analyse-row-label" style="font-weight:700;color:var(--text)">→ Prix d'offre conseillé (€)</div><div class="analyse-row-value highlight-blue" style="font-size:16px"><span id="rv-prixOffre">${fmtE(c.prixOffreConseille)}</span></div><div class="analyse-row-note">Minimum des deux plafonds</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">↳ Décote sur prix affiché (%)</div><div class="analyse-row-value ${c.decote>0.1?'highlight-red':'highlight-orange'}"><span id="rv-decote">${fmtP(c.decote)}</span></div><div class="analyse-row-note">Effort de négociation nécessaire</div></div>
+      </div>
+
+      <!-- ⑦ Go/No-Go -->
+      <div class="analyse-section">
+        <div class="analyse-section-title">⑦ Verdict Go / No-Go</div>
+        <div class="gonogo-row"><div class="gonogo-label">Marge brute actuelle</div><div class="gonogo-badge ${c.gonogoBrut}" id="rv-gonogoBrut">${gLabel[c.gonogoBrut]} — ${fmtP(c.margeBrutePct)}</div></div>
+        <div class="gonogo-row"><div class="gonogo-label">Marge nette actuelle</div><div class="gonogo-badge ${c.gonogoNet}" id="rv-gonogoNet">${gLabel[c.gonogoNet]} — ${fmtP(c.margeNettePct)}</div></div>
+        <div style="padding:10px 18px;font-size:11px;color:var(--muted)">Seuils bruts : ✅ ≥20% | ⚠️ 18-20% | ❌ &lt;18% — Seuils nets : ✅ ≥15% | ⚠️ 12-15% | ❌ &lt;12%</div>
+      </div>
+
+      <!-- ⑧ Analyse m² -->
+      <div class="analyse-section">
+        <div class="analyse-section-title">⑧ Analyse au m²</div>
+        <div class="analyse-row"><div class="analyse-row-label">Prix d'achat au m² (€/m²)</div><div class="analyse-row-value"><span id="rv-m2Achat">${fmtE(c.prixM2Achat).replace(' €',' €/m²')}</span></div><div class="analyse-row-note">Prix actuel annonce / surface</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Coût total au m² (€/m²)</div><div class="analyse-row-value"><span id="rv-m2Cout">${fmtE(c.prixM2Cout).replace(' €',' €/m²')}</span></div><div class="analyse-row-note">Acquisition + travaux / surface</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Prix de revente au m² (€/m²)</div><div class="analyse-row-value"><span id="rv-m2Revente">${fmtE(c.prixM2Revente).replace(' €',' €/m²')}</span></div><div class="analyse-row-note">Prix de revente visé / surface</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Référence marché au m² (€/m²)</div><div class="analyse-row-value highlight-blue">${fmtE(b.prixM2Ref).replace(' €',' €/m²')}</div><div class="analyse-row-note">DVF 2024 — médiane secteur</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Écart revente vs marché (%)</div><div class="analyse-row-value ${c.prixM2Revente>(b.prixM2Ref*1.1)?'highlight-orange':''}}"><span id="rv-ecart">${b.prixM2Ref>0?((c.prixM2Revente/b.prixM2Ref-1)*100).toFixed(1)+'%':'—'}</span></div><div class="analyse-row-note">Positif = vous visez au-dessus du marché actuel</div></div>
+      </div>
+
+      <!-- ⑨ Rentabilité locative -->
+      <div class="analyse-section">
+        <div class="analyse-section-title">⑨ Rentabilité locative (si garde du bien)</div>
+        <div class="analyse-row"><div class="analyse-row-label">Rendement brut (%)</div><div class="analyse-row-value"><span id="rv-rendBrut">${c.rendBrut>0?fmtP(c.rendBrut):'Loyer non renseigné'}</span></div><div class="analyse-row-note">Loyer annuel brut / prix de revente</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Rendement net estimé (%)</div><div class="analyse-row-value"><span id="rv-rendNet">${c.rendNet>0?fmtP(c.rendNet):'—'}</span></div><div class="analyse-row-note">Loyer × 70% (charges, vacance, fiscalité) / revente</div></div>
+      </div>
+
+      <!-- Notes & statut -->
+      <div class="analyse-section full">
+        <div class="analyse-section-title">📝 Notes & Statut</div>
+        <div class="analyse-row">
+          <div class="analyse-row-label">Statut</div>
+          <select class="analyse-select" onchange="updateBienField(${b.id},'statut',this.value)">
+            ${Object.entries(statutLabel).map(([k,v])=>`<option value="${k}" ${b.statut===k?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="analyse-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+          <div class="analyse-row-label">Notes</div>
+          <textarea style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;outline:none;min-height:80px" oninput="updateBienField(${b.id},'notes',this.value)">${b.notes||''}</textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="save-bar">
+      <button class="btn-save" onclick="showPage('biens')">✅ Sauvegarder et retourner</button>
+    </div>`;
+}
+
+// ═══ UPDATE FIELD EN TEMPS RÉEL (sans re-render) ═══
+function updateBienField(id, field, value) {
+  const biens = getBiens();
+  const idx = biens.findIndex(b=>b.id===id);
+  if (idx<0) return;
+  const numFields = ['prix','surface','travaux','prixRevente','prixM2Ref','loyer','montantEmprunte','tauxInteret','dureefranchise','tauxAgence','margeCibleNette','margeCibleBrute','tauxNotaire','tauxPV'];
+  const isNum = numFields.includes(field);
+  const isBool = typeof value === 'boolean';
+  biens[idx][field] = isBool ? value : (isNum ? parseFloat(value)||0 : value);
+  saveBiens(biens);
+  updateCalcDisplay(biens[idx]);
+  // Si c'est une option activable (bool), on re-render pour afficher/masquer les sous-champs
+  if (isBool) render();
+}
+
+function updateCalcDisplay(b) {
+  const c = calcul(b);
+  const set = (id, val, cls) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = val;
+    if (cls) { el.className = el.className.replace(/highlight-\w+/g,''); el.classList.add(cls); }
+  };
+  const colorB = c.gonogoBrut==='go'?'highlight-green':c.gonogoBrut==='limite'?'highlight-orange':'highlight-red';
+  const colorN = c.gonogoNet==='go'?'highlight-green':c.gonogoNet==='limite'?'highlight-orange':'highlight-red';
+  const colorMB = c.margeBrute>0?'highlight-green':'highlight-red';
+  const colorMN = c.margeNette>0?'highlight-green':'highlight-red';
+
+  set('rv-notaire',    fmtE(c.notaire));
+  set('rv-coutAcq',    fmtE(c.coutAcquisition));
+  set('rv-coutOp',     fmtE(c.coutOperation));
+  set('rv-agence',     fmtE(c.fraisAgenceMt));
+  set('rv-interets',   fmtE(c.interetsMt));
+  set('rv-coutTotal',  fmtE(c.coutTotal));
+  set('rv-margeBruteE',  fmtE(c.margeBrute), colorMB);
+  set('rv-margeBrutePct', fmtP(c.margeBrutePct), colorB);
+  set('rv-impo',         fmtE(c.impo));
+  set('rv-margeNetteE',  fmtE(c.margeNette), colorMN);
+  set('rv-margeNettePct', fmtP(c.margeNettePct), colorN);
+  set('rv-prixMaxNette',  fmtE(c.prixMaxNette));
+  set('rv-prixMaxBrute',  fmtE(c.prixMaxBrute));
+  set('rv-prixOffre',     fmtE(c.prixOffreConseille));
+  set('rv-decote',        fmtP(c.decote));
+  set('rv-m2Achat',       fmtE(c.prixM2Achat).replace(' €',' €/m²'));
+  set('rv-m2Cout',        fmtE(c.prixM2Cout).replace(' €',' €/m²'));
+  set('rv-m2Revente',     fmtE(c.prixM2Revente).replace(' €',' €/m²'));
+  set('rv-ecart',         b.prixM2Ref>0?((c.prixM2Revente/b.prixM2Ref-1)*100).toFixed(1)+'%':'—');
+  set('rv-rendBrut',      c.rendBrut>0?fmtP(c.rendBrut):'Loyer non renseigné');
+  set('rv-rendNet',       c.rendNet>0?fmtP(c.rendNet):'—');
+
+  // Go/No-Go badges
+  const ggB = document.getElementById('rv-gonogoBrut');
+  if (ggB) { ggB.textContent = gLabel[c.gonogoBrut]+' — '+fmtP(c.margeBrutePct); ggB.className='gonogo-badge '+c.gonogoBrut; }
+  const ggN = document.getElementById('rv-gonogoNet');
+  if (ggN) { ggN.textContent = gLabel[c.gonogoNet]+' — '+fmtP(c.margeNettePct); ggN.className='gonogo-badge '+c.gonogoNet; }
+}
+
+// ═══ COMPARAISON ═══
+function renderComparaison(main, biens) {
+  const actifs = biens.filter(b=>b.statut!=='refuse');
+  main.innerHTML = `
+    <div class="page-header"><div class="page-title">Comparaison</div><div class="page-date">Classement par rentabilité</div></div>
+    ${actifs.length===0?`<div class="empty-state"><div class="emoji">⚖️</div><p>Aucun bien actif à comparer</p></div>`:`
+    <div class="compare-card">
+      <div class="section-title">Marge brute % — classement</div>
+      <div class="compare-grid">
+        ${actifs.sort((a,b)=>calcul(b).margeBrutePct-calcul(a).margeBrutePct).map(b=>{
+          const c=calcul(b); const pct=Math.max(0,c.margeBrutePct);
+          const col=c.gonogoBrut==='go'?'var(--green)':c.gonogoBrut==='limite'?'var(--orange)':'var(--red)';
+          return `<div class="compare-row"><div class="compare-name" title="${b.nom}">${b.nom}</div><div class="compare-bar-wrap"><div class="compare-bar-fill" style="width:${Math.min(100,pct*300)}%;background:${col}"></div></div><div class="compare-pct" style="color:${col}">${fmtP(pct)}</div></div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="section-title">Marge nette % après impôt</div>
+      <div class="compare-grid">
+        ${actifs.sort((a,b)=>calcul(b).margeNettePct-calcul(a).margeNettePct).map(b=>{
+          const c=calcul(b); const pct=Math.max(0,c.margeNettePct);
+          const col=c.gonogoNet==='go'?'var(--green)':c.gonogoNet==='limite'?'var(--orange)':'var(--red)';
+          return `<div class="compare-row"><div class="compare-name" title="${b.nom}">${b.nom}</div><div class="compare-bar-wrap"><div class="compare-bar-fill" style="width:${Math.min(100,pct*400)}%;background:${col}"></div></div><div class="compare-pct" style="color:${col}">${fmtP(pct)}</div></div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="section-title">Prix d'achat au m² vs référence marché</div>
+      <div class="compare-grid">
+        ${actifs.map(b=>{
+          const c=calcul(b); const ratio=b.prixM2Ref>0?c.prixM2Achat/b.prixM2Ref:1;
+          const col=ratio<=0.92?'var(--green)':ratio>=1.08?'var(--red)':'var(--orange)';
+          return `<div class="compare-row"><div class="compare-name" title="${b.nom}">${b.nom}</div><div class="compare-bar-wrap"><div class="compare-bar-fill" style="width:${Math.min(100,ratio*60)}%;background:${col}"></div></div><div class="compare-pct" style="color:${col}">${c.prixM2Achat.toLocaleString('fr-FR')} €</div></div>`;
+        }).join('')}
+      </div>
+    </div>`}`;
+}
+
+// ═══ SIMULATEUR ═══
+function renderSimulateur(main) {
+  main.innerHTML = `
+    <div class="page-header"><div class="page-title">Simulateur rapide</div><div class="page-date">Calculez la rentabilité d'un bien</div></div>
+    <div class="sim-card">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Prix d'achat (€)</label><input class="form-input" type="number" id="s-prix" placeholder="200 000" oninput="renderSim()"></div>
+        <div class="form-group"><label class="form-label">Surface (m²)</label><input class="form-input" type="number" id="s-surface" placeholder="45" oninput="renderSim()"></div>
+        <div class="form-group"><label class="form-label">Travaux (€)</label><input class="form-input" type="number" id="s-travaux" placeholder="30 000" oninput="renderSim()"></div>
+        <div class="form-group"><label class="form-label">Prix de revente visé (€)</label><input class="form-input" type="number" id="s-revente" placeholder="300 000" oninput="renderSim()"></div>
+      </div>
+      <div id="sim-result" style="margin-top:20px"></div>
+    </div>`;
+}
+
+function renderSim() {
+  const prix=parseFloat(document.getElementById('s-prix')?.value)||0;
+  const surface=parseFloat(document.getElementById('s-surface')?.value)||0;
+  const travaux=parseFloat(document.getElementById('s-travaux')?.value)||0;
+  const revente=parseFloat(document.getElementById('s-revente')?.value)||0;
+  if (!prix||!revente) { document.getElementById('sim-result').innerHTML=''; return; }
+  const c=calcul({prix,surface,travaux,prixRevente:revente,fraisAgence:false,interets:false,margeCibleBrute:0.20,margeCibleNette:0.15});
+  document.getElementById('sim-result').innerHTML=`
+    <div class="result-grid">
+      <div class="result-item"><div class="result-item-label">Coût total</div><div class="result-item-value">${fmtE(c.coutOperation)}</div></div>
+      <div class="result-item"><div class="result-item-label">Marge brute</div><div class="result-item-value ${c.margeBrute>0?'green':'red'}">${fmtE(c.margeBrute)}</div></div>
+      <div class="result-item"><div class="result-item-label">Marge brute %</div><div class="result-item-value ${c.gonogoBrut==='go'?'green':c.gonogoBrut==='limite'?'orange':'red'}">${fmtP(c.margeBrutePct)}</div></div>
+      <div class="result-item"><div class="result-item-label">Marge nette après impôt</div><div class="result-item-value ${c.margeNette>0?'green':'red'}">${fmtE(c.margeNette)}</div></div>
+    </div>
+    <div class="gonogo-bar"><div style="font-size:13px;font-weight:600">Verdict marge brute</div><div class="gonogo-badge ${c.gonogoBrut}">${gLabel[c.gonogoBrut]}</div></div>
+    <div class="gonogo-bar"><div style="font-size:13px;font-weight:600">Verdict marge nette</div><div class="gonogo-badge ${c.gonogoNet}">${gLabel[c.gonogoNet]}</div></div>`;
+}
+
+// ═══ STATUT DROPDOWN ═══
+function toggleStatutMenu(id, el) {
+  document.querySelectorAll('.statut-menu').forEach(m=>{ if(m.id!=='sm-'+id) m.style.display='none'; });
+  const menu=document.getElementById('sm-'+id);
+  if(!menu) return;
+  if(menu.style.display==='block'){menu.style.display='none';return;}
+  const rect=el.getBoundingClientRect();
+  menu.style.position='fixed';
+  menu.style.left=rect.left+'px';
+  menu.style.display='block';
+  const menuH=menu.offsetHeight;
+  menu.style.top=(window.innerHeight-rect.bottom<menuH+8)?(rect.top-menuH-4)+'px':(rect.bottom+4)+'px';
+}
+
+function changeStatut(id, statut) {
+  const biens=getBiens();
+  const idx=biens.findIndex(b=>b.id===id);
+  if(idx>=0){biens[idx].statut=statut;saveBiens(biens);}
+  document.querySelectorAll('.statut-menu').forEach(m=>m.style.display='none');
+  render();
+}
+
+function supprimerBien(id) {
+  if(!confirm('Supprimer ce bien ?')) return;
+  saveBiens(getBiens().filter(b=>b.id!==id));
+  render();
+}
+
+function ajouterBien() {
+  const biens=getBiens();
+  const newB={
+    id:Date.now(), nom:'Nouveau bien', adresse:'', prix:0, surface:0, travaux:0,
+    prixRevente:0, prixM2Ref:0, fraisAgence:false, tauxAgence:0.04, interets:false,
+    montantEmprunte:0, tauxInteret:0.035, dureefranchise:12, loyer:0,
+    margeCibleNette:0.15, margeCibleBrute:0.20, statut:'prospect', notes:'', date:new Date().toISOString().split('T')[0]
+  };
+  biens.unshift(newB);
+  saveBiens(biens);
+  showPage('analyse', newB.id);
+}
+
+// API LBC
+window.addBienFromLBC=function(data){
+  const biens=getBiens();
+  const newB={
+    id:Date.now(), nom:data.titre||'Bien LBC', adresse:data.adresse||'', prix:data.prix||0,
+    surface:data.surface||0, travaux:0, prixRevente:data.prixRevente||0, prixM2Ref:data.prixM2Ref||0,
+    fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:Math.round((data.prix||0)*0.8),
+    tauxInteret:0.035, dureefranchise:12, loyer:0, tauxNotaire:0.075, tauxPV:0.362, margeCibleNette:0.15, margeCibleBrute:0.20,
+    statut:'prospect', notes:'Importé depuis LBC — '+new Date().toLocaleDateString('fr-FR'),
+    date:new Date().toISOString().split('T')[0]
+  };
+  biens.unshift(newB);
+  saveBiens(biens);
+  showPage('analyse', newB.id);
+};
+
+document.addEventListener('click',function(e){
+  if(!e.target.classList.contains('statut-badge'))
+    document.querySelectorAll('.statut-menu').forEach(m=>m.style.display='none');
+});
+
+// Lit les données passées dans l'URL par le script LBC (#add=...)
+function checkURLHash() {
+  try {
+    const hash = window.location.hash;
+    if (!hash.startsWith('#add=')) return;
+    const encoded = hash.slice(5);
+    const data = JSON.parse(decodeURIComponent(encoded));
+    // Nettoie le hash pour éviter de re-ajouter au rafraîchissement
+    history.replaceState(null, '', window.location.pathname);
+    window.addBienFromLBC(data);
+  } catch(e) { console.error('ImmoTrack URL parse error:', e); }
+}
+
+initDemo();
+checkURLHash();
+render();
+</script>
+</body>
+</html>
