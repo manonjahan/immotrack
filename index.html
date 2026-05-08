@@ -698,14 +698,15 @@ document.addEventListener('click',function(e){
     document.querySelectorAll('.statut-menu').forEach(m=>m.style.display='none');
 });
 
-// Lit les données passées dans l'URL par le script LBC (#add=...)
+// Lit les données passées dans l'URL par le script LBC (?add=...)
 function checkURLHash() {
   try {
-    const hash = window.location.hash;
-    if (!hash.startsWith('#add=')) return;
-    const encoded = hash.slice(5);
+    // Lecture depuis query param ?add=
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('add');
+    if (!encoded) return;
     const data = JSON.parse(decodeURIComponent(encoded));
-    // Nettoie le hash pour éviter de re-ajouter au rafraîchissement
+    // Nettoie l'URL pour éviter de re-ajouter au rafraîchissement
     history.replaceState(null, '', window.location.pathname);
     window.addBienFromLBC(data);
   } catch(e) { console.error('ImmoTrack URL parse error:', e); }
