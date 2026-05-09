@@ -60,8 +60,8 @@
     .btn-add:hover { opacity:.85; }
 
     .biens-table { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:visible; margin-bottom:28px; }
-    .table-head { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 100px 120px 100px; padding:12px 20px; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-radius:14px 14px 0 0; overflow:hidden; }
-    .table-row { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 100px 120px 100px; padding:14px 20px; border-bottom:1px solid var(--border); font-size:13px; align-items:center; transition:background .1s; }
+    .table-head { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 100px 120px 160px; padding:12px 20px; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-radius:14px 14px 0 0; overflow:hidden; }
+    .table-row { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 100px 120px 160px; padding:14px 20px; border-bottom:1px solid var(--border); font-size:13px; align-items:center; transition:background .1s; }
     .table-row:last-child { border-bottom:none; border-radius:0 0 14px 14px; }
     .table-row:hover { background:var(--surface2); }
 
@@ -270,6 +270,8 @@ function initDemo() {
 
 // ═══ CALCULS COMPLETS ═══
 function calcul(b) {
+  // Utilise le prix vérifié DataImmo si disponible
+  const prixM2Actif = (b.verifie && b.prixM2RefVerifie) ? b.prixM2RefVerifie : (b.prixM2Ref || 0);
   const notaire = Math.round(b.prix * (b.tauxNotaire||0.075));
   const fraisAgenceMt = b.fraisAgence ? Math.round(b.prixRevente * (b.tauxAgence||0.04)) : 0;
   const interetsMt = b.interets ? Math.round((b.montantEmprunte||0) * (b.tauxInteret||0.035) * (b.dureefranchise||12)/12) : 0;
@@ -282,6 +284,7 @@ function calcul(b) {
   const margeNette = margeBrute - impo - fraisAgenceMt - interetsMt;
   const margeNettePct = b.prixRevente > 0 ? margeNette/b.prixRevente : 0;
   const prixM2Achat = b.surface > 0 ? Math.round(b.prix/b.surface) : 0;
+  const ecartM2 = prixM2Actif > 0 && b.surface > 0 ? ((b.prixRevente/b.surface) / prixM2Actif - 1) : 0;
   const prixM2Cout = b.surface > 0 ? Math.round(coutOperation/b.surface) : 0;
   const prixM2Revente = b.surface > 0 ? Math.round(b.prixRevente/b.surface) : 0;
   const gonogoBrut = margeBrutePct >= 0.20 ? 'go' : margeBrutePct >= 0.18 ? 'limite' : 'nogo';
@@ -470,6 +473,16 @@ function renderAnalyse(main, biens) {
         <div class="analyse-row"><div class="analyse-row-label">Prix de revente visé (€)</div><input class="analyse-input blue" type="number" value="${b.prixRevente}" id="a-revente" oninput="updateBienField(${b.id},'prixRevente',this.value)"><div class="analyse-row-note">Prix marché cible après travaux</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Surface (m²)</div><input class="analyse-input blue" type="number" value="${b.surface}" id="a-surface" oninput="updateBienField(${b.id},'surface',this.value)"><div class="analyse-row-note">Surface habitable</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Référence marché m² (€/m²)</div><input class="analyse-input blue" type="number" value="${b.prixM2Ref}" id="a-ref" oninput="updateBienField(${b.id},'prixM2Ref',this.value)"><div class="analyse-row-note">DVF 2024 — médiane secteur</div></div>
+        <div class="analyse-row" style="${b.prixM2RefVerifie?'background:var(--blue-bg)':''}">
+          <div class="analyse-row-label" style="font-weight:600">
+            <span style="color:var(--accent)">🔵 Référence vérifiée m² (€/m²)</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="analyse-input blue" type="number" value="${b.prixM2RefVerifie||''}" placeholder="Ex: 5200" id="a-refv" oninput="updateBienField(${b.id},'prixM2RefVerifie',this.value)">
+            <button onclick="(function(){var biens=getBiens();var idx=biens.findIndex(function(x){return x.id===${b.id}});if(idx>=0){biens[idx].verifie=!!biens[idx].prixM2RefVerifie;saveBiens(biens);render();}})()" style="background:${b.prixM2RefVerifie?'#1A2A3A':'var(--surface2)'};border:1.5px solid ${b.prixM2RefVerifie?'#3B82F6':'var(--border)'};color:${b.prixM2RefVerifie?'#60A5FA':'var(--muted)'};padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;white-space:nowrap">${b.prixM2RefVerifie?'🔵 Vérifié ✓':'🔵 Activer'}</button>
+          </div>
+          <div class="analyse-row-note">Saisi manuellement depuis DataImmo — remplace DVF${b.prixM2RefVerifie&&b.verifie?' ✅ Actif':''}</div>
+        </div>
       </div>
 
       <!-- ③ Options activables -->
@@ -570,7 +583,9 @@ function renderAnalyse(main, biens) {
         <div class="analyse-row"><div class="analyse-row-label">Prix d'achat au m² (€/m²)</div><div class="analyse-row-value"><span id="rv-m2Achat">${fmtE(c.prixM2Achat).replace(' €',' €/m²')}</span></div><div class="analyse-row-note">Prix actuel annonce / surface</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Coût total au m² (€/m²)</div><div class="analyse-row-value"><span id="rv-m2Cout">${fmtE(c.prixM2Cout).replace(' €',' €/m²')}</span></div><div class="analyse-row-note">Acquisition + travaux / surface</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Prix de revente au m² (€/m²)</div><div class="analyse-row-value"><span id="rv-m2Revente">${fmtE(c.prixM2Revente).replace(' €',' €/m²')}</span></div><div class="analyse-row-note">Prix de revente visé / surface</div></div>
-        <div class="analyse-row"><div class="analyse-row-label">Référence marché au m² (€/m²)</div><div class="analyse-row-value highlight-blue">${fmtE(b.prixM2Ref).replace(' €',' €/m²')}</div><div class="analyse-row-note">DVF 2024 — médiane secteur</div></div>
+        <div class="analyse-row"><div class="analyse-row-label">Référence DVF 2024 (€/m²)</div><div class="analyse-row-value">${fmtE(b.prixM2Ref).replace(' €',' €/m²')}</div><div class="analyse-row-note">Médiane secteur DVF</div></div>
+        ${b.prixM2RefVerifie?`<div class="analyse-row" style="background:var(--blue-bg)"><div class="analyse-row-label" style="font-weight:700;color:var(--accent)">🔵 Référence vérifiée (€/m²)</div><div class="analyse-row-value highlight-blue">${fmtE(b.prixM2RefVerifie).replace(' €',' €/m²')}</div><div class="analyse-row-note">Source DataImmo — utilisée pour les calculs</div></div>`:''}
+        <div class="analyse-row"><div class="analyse-row-label">Référence active utilisée (€/m²)</div><div class="analyse-row-value highlight-blue">${fmtE(c.prixM2Actif||b.prixM2Ref).replace(' €',' €/m²')}</div><div class="analyse-row-note">${b.prixM2RefVerifie&&b.verifie?'🔵 Source : DataImmo vérifié':'Source : DVF 2024'}</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Écart revente vs marché (%)</div><div class="analyse-row-value ${c.prixM2Revente>(b.prixM2Ref*1.1)?'highlight-orange':''}}"><span id="rv-ecart">${b.prixM2Ref>0?((c.prixM2Revente/b.prixM2Ref-1)*100).toFixed(1)+'%':'—'}</span></div><div class="analyse-row-note">Positif = vous visez au-dessus du marché actuel</div></div>
       </div>
 
@@ -615,7 +630,7 @@ function updateBienField(id, field, value) {
   const biens = getBiens();
   const idx = biens.findIndex(b=>b.id===id);
   if (idx<0) return;
-  const numFields = ['prix','surface','travaux','prixRevente','prixM2Ref','loyer','montantEmprunte','tauxInteret','dureefranchise','tauxAgence','margeCibleNette','margeCibleBrute','tauxNotaire','tauxPV'];
+  const numFields = ['prix','surface','travaux','prixRevente','prixM2Ref','loyer','montantEmprunte','tauxInteret','dureefranchise','tauxAgence','margeCibleNette','margeCibleBrute','tauxNotaire','tauxPV','prixM2RefVerifie'];
   const isNum = numFields.includes(field);
   const isBool = typeof value === 'boolean';
   biens[idx][field] = isBool ? value : (isNum ? parseFloat(value)||0 : value);
