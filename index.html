@@ -81,6 +81,8 @@
     .statut-badge.gagne { background:var(--green-bg); color:var(--green); }
     .statut-badge.a_visiter { background:#1A1A3A; color:#C084FC; }
     .statut-badge.estimation { background:#1A2A2A; color:#22D3EE; }
+    .statut-badge.abandon { background:#2A1A2A; color:#A78BFA; }
+    .verifie-badge { display:inline-flex; align-items:center; gap:3px; background:#1A2A3A; border:1.5px solid #3B82F6; color:#60A5FA; font-size:10px; font-weight:700; padding:2px 7px; border-radius:99px; }
 
     .prix-m2 { font-family:'DM Mono',monospace; font-size:12px; color:var(--muted); }
     .marge { font-family:'DM Mono',monospace; font-size:12px; font-weight:500; }
@@ -107,6 +109,7 @@
     .statut-menu-item.gagne { color:var(--green); }
     .statut-menu-item.a_visiter { color:#C084FC; }
     .statut-menu-item.estimation { color:#22D3EE; }
+    .statut-menu-item.abandon { color:#A78BFA; }
 
     /* ANALYSE PAGE */
     .analyse-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
@@ -259,9 +262,9 @@ function saveBiens(b) { localStorage.setItem('immotrack_biens', JSON.stringify(b
 function initDemo() {
   if (getBiens().length > 0) return;
   saveBiens([
-    { id:1, nom:"Appartement 2P Saint-Denis", adresse:"Saint-Denis 93200 — La Plaine", prix:187000, surface:48, travaux:35000, prixRevente:240000, prixM2Ref:3900, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:150000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, like:false, like:false, lien:'', tauxNotaire:0.075, tauxPV:0.362, statut:"visite", notes:"Bon état général, cuisine à refaire", date:"2026-04-15" },
-    { id:2, nom:"T3 Pantin Ourcq", adresse:"Pantin 93500 — Ourcq", prix:320000, surface:62, travaux:45000, prixRevente:420000, prixM2Ref:6500, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:280000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, like:false, like:false, lien:'', tauxNotaire:0.075, tauxPV:0.362, statut:"offre", notes:"Offre à 295 000€ faite", date:"2026-04-28" },
-    { id:3, nom:"Studio Montreuil Mairie", adresse:"Montreuil 93100 — Mairie", prix:210000, surface:31, travaux:20000, prixRevente:250000, prixM2Ref:6800, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:180000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, like:false, like:false, lien:'', tauxNotaire:0.075, tauxPV:0.362, statut:"refuse", notes:"Vendeur n'a pas accepté", date:"2026-03-10" }
+    { id:1, nom:"Appartement 2P Saint-Denis", adresse:"Saint-Denis 93200 — La Plaine", prix:187000, surface:48, travaux:35000, prixRevente:240000, prixM2Ref:3900, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:150000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, like:false, like:false, verifie:false, lien:'', tauxNotaire:0.075, tauxPV:0.362, statut:"visite", notes:"Bon état général, cuisine à refaire", date:"2026-04-15" },
+    { id:2, nom:"T3 Pantin Ourcq", adresse:"Pantin 93500 — Ourcq", prix:320000, surface:62, travaux:45000, prixRevente:420000, prixM2Ref:6500, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:280000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, like:false, like:false, verifie:false, lien:'', tauxNotaire:0.075, tauxPV:0.362, statut:"offre", notes:"Offre à 295 000€ faite", date:"2026-04-28" },
+    { id:3, nom:"Studio Montreuil Mairie", adresse:"Montreuil 93100 — Mairie", prix:210000, surface:31, travaux:20000, prixRevente:250000, prixM2Ref:6800, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:180000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, like:false, like:false, verifie:false, lien:'', tauxNotaire:0.075, tauxPV:0.362, statut:"refuse", notes:"Vendeur n'a pas accepté", date:"2026-03-10" }
   ]);
 }
 
@@ -297,7 +300,7 @@ function calcul(b) {
 
 const fmtE = n => n !== undefined && n !== null && !isNaN(n) ? Math.round(n).toLocaleString('fr-FR') + ' €' : '—';
 const fmtP = n => n ? (n*100).toFixed(1)+'%' : '—';
-const statutLabel = { prospect:'Prospect', a_visiter:'À visiter', estimation:'Estimation en cours', visite:'Visité', offre:'Offre faite', refuse:'Refusé', gagne:'Acquis' };
+const statutLabel = { prospect:'Prospect', a_visiter:'À visiter', estimation:'Estimation en cours', visite:'Visité', offre:'Offre faite', refuse:'Refusé', abandon:'Abandonné', gagne:'Acquis' };
 const gLabel = { go:'✅ GO', limite:'⚠️ LIMITE', nogo:'❌ NO-GO' };
 
 // ═══ NAVIGATION ═══
@@ -403,6 +406,7 @@ function renderBiensTable(biens, limit, mini) {
             </div>
             <div class="action-btns">
               <button class="like-btn ${b.like?'liked':''}" onclick="toggleLike(${b.id});event.stopPropagation()" title="${b.like?'Retirer des favoris':'Ajouter aux favoris'}">${b.like?'❤️':'🤍'}</button>
+              <button onclick="toggleVerifie(${b.id});event.stopPropagation()" title="${b.verifie?'Retirer vérification DataImmo':'Marquer comme vérifié DataImmo'}" style="background:${b.verifie?'#1A2A3A':'transparent'};border:${b.verifie?'1.5px solid #3B82F6':'1.5px solid var(--border)'};color:${b.verifie?'#60A5FA':'var(--muted)'};padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">🔵${b.verifie?' ✓':''}</button>
               <button class="action-btn" onclick="showPage('analyse',${b.id});event.stopPropagation()">📋 Analyse</button>
               <button class="action-btn danger" onclick="supprimerBien(${b.id});event.stopPropagation()">🗑</button>
             </div>
@@ -734,6 +738,17 @@ function renderSim() {
     <div class="gonogo-bar"><div style="font-size:13px;font-weight:600">Verdict marge nette</div><div class="gonogo-badge ${c.gonogoNet}">${gLabel[c.gonogoNet]}</div></div>`;
 }
 
+// ═══ VERIFIE ═══
+function toggleVerifie(id) {
+  const biens = getBiens();
+  const idx = biens.findIndex(b => b.id === id);
+  if (idx >= 0) {
+    biens[idx].verifie = !biens[idx].verifie;
+    saveBiens(biens);
+    render();
+  }
+}
+
 // ═══ LIKE ═══
 function toggleLike(id) {
   const biens = getBiens();
@@ -1054,9 +1069,10 @@ function openPreview(id) {
 
   document.getElementById('preview-panel').innerHTML = `
     <button class="preview-close" onclick="closePreview()">✕</button>
-    <div style="display:flex;align-items:center;gap:8px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <div class="preview-title" style="flex:1">${b.nom}</div>
       <button class="like-btn ${b.like?'liked':''}" onclick="toggleLike(${b.id});closePreview();setTimeout(()=>openPreview(${b.id}),50)" style="font-size:22px">${b.like?'❤️':'🤍'}</button>
+      ${b.verifie?'<span class="verifie-badge">🔵 Vérifié DataImmo</span>':''}
     </div>
     <div class="preview-addr">${b.adresse}</div>
 
