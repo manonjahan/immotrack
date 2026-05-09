@@ -79,6 +79,8 @@
     .statut-badge.offre { background:#2D1A0E; color:#FB923C; }
     .statut-badge.refuse { background:var(--red-bg); color:var(--red); }
     .statut-badge.gagne { background:var(--green-bg); color:var(--green); }
+    .statut-badge.a_visiter { background:#1A1A3A; color:#C084FC; }
+    .statut-badge.estimation { background:#1A2A2A; color:#22D3EE; }
 
     .prix-m2 { font-family:'DM Mono',monospace; font-size:12px; color:var(--muted); }
     .marge { font-family:'DM Mono',monospace; font-size:12px; font-weight:500; }
@@ -100,6 +102,8 @@
     .statut-menu-item.offre { color:#FB923C; }
     .statut-menu-item.refuse { color:var(--red); }
     .statut-menu-item.gagne { color:var(--green); }
+    .statut-menu-item.a_visiter { color:#C084FC; }
+    .statut-menu-item.estimation { color:#22D3EE; }
 
     /* ANALYSE PAGE */
     .analyse-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
@@ -222,6 +226,7 @@
       <button class="export-btn" onclick="exportData()" title="Télécharger une sauvegarde de vos biens">💾 Exporter</button>
       <button class="export-btn import" onclick="document.getElementById('import-input').click()" title="Restaurer une sauvegarde">📂 Importer</button>
       <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="export-btn" onclick="exportExcel()" title="Exporter tous les biens en Excel (un onglet par bien)" style="border-color:#22D3EE;color:#22D3EE;margin-top:4px;width:100%">📊 Export Excel</button>
     </div>
   </div>
 </aside>
@@ -244,9 +249,9 @@ function saveBiens(b) { localStorage.setItem('immotrack_biens', JSON.stringify(b
 function initDemo() {
   if (getBiens().length > 0) return;
   saveBiens([
-    { id:1, nom:"Appartement 2P Saint-Denis", adresse:"Saint-Denis 93200 — La Plaine", prix:187000, surface:48, travaux:35000, prixRevente:240000, prixM2Ref:3900, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:150000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, tauxNotaire:0.075, tauxPV:0.362, statut:"visite", notes:"Bon état général, cuisine à refaire", date:"2026-04-15" },
-    { id:2, nom:"T3 Pantin Ourcq", adresse:"Pantin 93500 — Ourcq", prix:320000, surface:62, travaux:45000, prixRevente:420000, prixM2Ref:6500, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:280000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, tauxNotaire:0.075, tauxPV:0.362, statut:"offre", notes:"Offre à 295 000€ faite", date:"2026-04-28" },
-    { id:3, nom:"Studio Montreuil Mairie", adresse:"Montreuil 93100 — Mairie", prix:210000, surface:31, travaux:20000, prixRevente:250000, prixM2Ref:6800, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:180000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, tauxNotaire:0.075, tauxPV:0.362, statut:"refuse", notes:"Vendeur n'a pas accepté", date:"2026-03-10" }
+    { id:1, nom:"Appartement 2P Saint-Denis", adresse:"Saint-Denis 93200 — La Plaine", prix:187000, surface:48, travaux:35000, prixRevente:240000, prixM2Ref:3900, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:150000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, lien:'', tauxNotaire:0.075, tauxPV:0.362, statut:"visite", notes:"Bon état général, cuisine à refaire", date:"2026-04-15" },
+    { id:2, nom:"T3 Pantin Ourcq", adresse:"Pantin 93500 — Ourcq", prix:320000, surface:62, travaux:45000, prixRevente:420000, prixM2Ref:6500, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:280000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, lien:'', tauxNotaire:0.075, tauxPV:0.362, statut:"offre", notes:"Offre à 295 000€ faite", date:"2026-04-28" },
+    { id:3, nom:"Studio Montreuil Mairie", adresse:"Montreuil 93100 — Mairie", prix:210000, surface:31, travaux:20000, prixRevente:250000, prixM2Ref:6800, fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:180000, tauxInteret:0.035, dureefranchise:12, loyer:0, margeCibleNette:0.15, margeCibleBrute:0.20, lien:'', tauxNotaire:0.075, tauxPV:0.362, statut:"refuse", notes:"Vendeur n'a pas accepté", date:"2026-03-10" }
   ]);
 }
 
@@ -282,7 +287,7 @@ function calcul(b) {
 
 const fmtE = n => n !== undefined && n !== null && !isNaN(n) ? Math.round(n).toLocaleString('fr-FR') + ' €' : '—';
 const fmtP = n => n ? (n*100).toFixed(1)+'%' : '—';
-const statutLabel = { prospect:'Prospect', visite:'Visité', offre:'Offre faite', refuse:'Refusé', gagne:'Acquis' };
+const statutLabel = { prospect:'Prospect', a_visiter:'À visiter', estimation:'Estimation en cours', visite:'Visité', offre:'Offre faite', refuse:'Refusé', gagne:'Acquis' };
 const gLabel = { go:'✅ GO', limite:'⚠️ LIMITE', nogo:'❌ NO-GO' };
 
 // ═══ NAVIGATION ═══
@@ -308,6 +313,8 @@ function render() {
   else if (currentPage === 'analyse') renderAnalyse(main, biens);
   else if (currentPage === 'comparaison') renderComparaison(main, biens);
   else if (currentPage === 'simulateur') renderSimulateur(main);
+  // Init simulateur offre après render de la page analyse
+  if (currentPage === 'analyse') setTimeout(initSimOffre, 50);
 }
 
 // ═══ DASHBOARD ═══
@@ -504,6 +511,32 @@ function renderAnalyse(main, biens) {
         <div class="analyse-row"><div class="analyse-row-label">Prix max selon marge BRUTE (€)</div><div class="analyse-row-value highlight-blue"><span id="rv-prixMaxBrute">${fmtE(c.prixMaxBrute)}</span></div><div class="analyse-row-note">→ Prix à ne pas dépasser</div></div>
         <div class="analyse-row" style="background:var(--blue-bg)"><div class="analyse-row-label" style="font-weight:700;color:var(--text)">→ Prix d'offre conseillé (€)</div><div class="analyse-row-value highlight-blue" style="font-size:16px"><span id="rv-prixOffre">${fmtE(c.prixOffreConseille)}</span></div><div class="analyse-row-note">Minimum des deux plafonds</div></div>
         <div class="analyse-row"><div class="analyse-row-label">↳ Décote sur prix affiché (%)</div><div class="analyse-row-value ${c.decote>0.1?'highlight-red':'highlight-orange'}"><span id="rv-decote">${fmtP(c.decote)}</span></div><div class="analyse-row-note">Effort de négociation nécessaire</div></div>
+        <div style="border-top:2px solid var(--accent);margin:8px 0;padding-top:12px">
+          <div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;padding:0 18px 8px">🎯 Simulateur d'offre</div>
+          <div class="analyse-row" style="background:var(--blue-bg)">
+            <div class="analyse-row-label" style="font-weight:700;color:var(--text)">Mon offre à faire (€)</div>
+            <input class="analyse-input blue" type="number" id="sim-offre-${b.id}"
+              value="${Math.round(c.prixOffreConseille)||b.prix}"
+              style="font-size:15px;font-weight:700"
+              oninput="simOffre(${b.id}, this.value)">
+            <div class="analyse-row-note">Modifie le montant pour voir la marge résultante</div>
+          </div>
+          <div class="analyse-row">
+            <div class="analyse-row-label">Marge brute si cette offre est acceptée</div>
+            <div class="analyse-row-value" id="sim-marge-brute-${b.id}" style="font-size:15px;font-weight:700">—</div>
+            <div class="analyse-row-note"></div>
+          </div>
+          <div class="analyse-row">
+            <div class="analyse-row-label">Marge nette après impôt</div>
+            <div class="analyse-row-value" id="sim-marge-nette-${b.id}" style="font-size:15px;font-weight:700">—</div>
+            <div class="analyse-row-note"></div>
+          </div>
+          <div class="analyse-row">
+            <div class="analyse-row-label">Verdict Go/No-Go si offre acceptée</div>
+            <div id="sim-gonogo-${b.id}" style="padding:6px 14px;border-radius:8px;font-size:13px;font-weight:700">—</div>
+            <div class="analyse-row-note"></div>
+          </div>
+        </div>
       </div>
 
       <!-- ⑦ Go/No-Go -->
@@ -738,6 +771,53 @@ window.addBienFromLBC=function(data){
   showPage('analyse', newB.id);
 };
 
+// ═══ SIMULATEUR D'OFFRE ═══
+function simOffre(id, offreVal) {
+  const biens = getBiens();
+  const b = biens.find(x => x.id === id);
+  if (!b) return;
+  const offre = parseFloat(offreVal) || 0;
+  if (!offre) return;
+
+  // Calcule avec le prix d'offre simulé
+  const notaire = Math.round(offre * (b.tauxNotaire||0.075));
+  const coutOp = offre + notaire + (b.travaux||0);
+  const margeBrute = b.prixRevente - coutOp;
+  const margeBrutePct = b.prixRevente > 0 ? margeBrute/b.prixRevente : 0;
+  const impo = margeBrute > 0 ? Math.round(margeBrute * (b.tauxPV||0.362)) : 0;
+  const margeNette = margeBrute - impo;
+  const margeNettePct = b.prixRevente > 0 ? margeNette/b.prixRevente : 0;
+  const gonogo = margeBrutePct >= 0.20 ? 'go' : margeBrutePct >= 0.18 ? 'limite' : 'nogo';
+
+  const colorB = margeBrute > 0 ? 'highlight-green' : 'highlight-red';
+  const colorN = margeNette > 0 ? 'highlight-green' : 'highlight-red';
+
+  const elMB = document.getElementById('sim-marge-brute-' + id);
+  const elMN = document.getElementById('sim-marge-nette-' + id);
+  const elGG = document.getElementById('sim-gonogo-' + id);
+
+  if (elMB) {
+    elMB.className = 'analyse-row-value ' + colorB;
+    elMB.textContent = fmtE(margeBrute) + ' (' + fmtP(margeBrutePct) + ')';
+  }
+  if (elMN) {
+    elMN.className = 'analyse-row-value ' + colorN;
+    elMN.textContent = fmtE(margeNette) + ' (' + fmtP(margeNettePct) + ')';
+  }
+  if (elGG) {
+    elGG.className = 'gonogo-badge ' + gonogo;
+    elGG.textContent = gLabel[gonogo];
+  }
+}
+
+// Initialise le simulateur d'offre après render
+function initSimOffre() {
+  document.querySelectorAll('[id^="sim-offre-"]').forEach(input => {
+    const id = parseInt(input.id.replace('sim-offre-', ''));
+    simOffre(id, input.value);
+  });
+}
+
 // ═══ EXPORT / IMPORT ═══
 function exportData() {
   const biens = getBiens();
@@ -748,6 +828,116 @@ function exportData() {
   const date = new Date().toLocaleDateString('fr-FR').replace(/\//g, '-');
   a.href = url;
   a.download = `ImmoTrack_sauvegarde_${date}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function exportExcel() {
+  const biens = getBiens();
+  if (biens.length === 0) { alert('Aucun bien à exporter'); return; }
+
+  // Génère un fichier Excel multi-onglets via HTML
+  let sheets = '';
+  biens.forEach((b, idx) => {
+    const c = calcul(b);
+    const safeName = b.nom.replace(/[<>&"]/g,'').slice(0,28);
+    const colorMB = c.margeBrute > 0 ? '#DCFCE7' : '#FEE2E2';
+    const colorMN = c.margeNette > 0 ? '#DCFCE7' : '#FEE2E2';
+    const colorGoBrut = c.gonogoBrut==='go'?'#DCFCE7':c.gonogoBrut==='limite'?'#FEF3C7':'#FEE2E2';
+    const colorGoNet  = c.gonogoNet==='go'?'#DCFCE7':c.gonogoNet==='limite'?'#FEF3C7':'#FEE2E2';
+    const txtGoBrut   = c.gonogoBrut==='go'?'✅ GO':c.gonogoBrut==='limite'?'⚠️ LIMITE':'❌ NO-GO';
+    const txtGoNet    = c.gonogoNet==='go'?'✅ GO':c.gonogoNet==='limite'?'⚠️ LIMITE':'❌ NO-GO';
+
+    sheets += `
+<Worksheet ss:Name="${safeName}">
+<Table>
+  <Row><Cell ss:MergeAcross="2"><Data ss:Type="String">📊 Simulateur Achat-Revente — ${safeName}</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Généré le ${new Date().toLocaleDateString('fr-FR')}</Data></Cell></Row>
+  <Row/>
+  <Row ss:StyleID="section"><Cell ss:MergeAcross="2"><Data ss:Type="String">① Paramètres constants</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Taux imposition plus-value (%)</Data></Cell><Cell><Data ss:Type="Number">${((b.tauxPV||0.362)*100).toFixed(1)}</Data></Cell><Cell><Data ss:Type="String">Particulier : IR 19% + PS 17,2%</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Taux frais de notaire (%)</Data></Cell><Cell><Data ss:Type="Number">${((b.tauxNotaire||0.075)*100).toFixed(1)}</Data></Cell><Cell><Data ss:Type="String">7,5% pour ancien entre 150k-350k€</Data></Cell></Row>
+  <Row/>
+  <Row ss:StyleID="section"><Cell ss:MergeAcross="2"><Data ss:Type="String">② Entrées variables</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Prix d'achat affiché (€)</Data></Cell><Cell><Data ss:Type="Number">${b.prix}</Data></Cell><Cell><Data ss:Type="String">Prix affiché sur LeBonCoin</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Frais de notaire (€)</Data></Cell><Cell><Data ss:Type="Number">${c.notaire}</Data></Cell><Cell><Data ss:Type="String">= Prix × ${((b.tauxNotaire||0.075)*100).toFixed(1)}%</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Travaux estimés (€)</Data></Cell><Cell><Data ss:Type="Number">${b.travaux||0}</Data></Cell><Cell><Data ss:Type="String">Estimé après visite</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Prix de revente visé (€)</Data></Cell><Cell><Data ss:Type="Number">${b.prixRevente}</Data></Cell><Cell><Data ss:Type="String">Prix marché cible après travaux</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Surface (m²)</Data></Cell><Cell><Data ss:Type="Number">${b.surface}</Data></Cell><Cell><Data ss:Type="String">Surface habitable</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Référence marché m² (€/m²)</Data></Cell><Cell><Data ss:Type="Number">${b.prixM2Ref}</Data></Cell><Cell><Data ss:Type="String">DVF 2024 — ${b.adresse}</Data></Cell></Row>
+  <Row/>
+  <Row ss:StyleID="section"><Cell ss:MergeAcross="2"><Data ss:Type="String">③ Options activées</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Frais d'agence revente</Data></Cell><Cell><Data ss:Type="String">${b.fraisAgence?'OUI — '+fmtE(c.fraisAgenceMt):'NON'}</Data></Cell><Cell><Data ss:Type="String">${b.fraisAgence?(b.tauxAgence*100).toFixed(1)+'%':''}</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Intérêts intercalaires</Data></Cell><Cell><Data ss:Type="String">${b.interets?'OUI — '+fmtE(c.interetsMt):'NON'}</Data></Cell><Cell><Data ss:Type="String">${b.interets?b.dureefranchise+' mois à '+(b.tauxInteret*100).toFixed(1)+'%':''}</Data></Cell></Row>
+  <Row/>
+  <Row ss:StyleID="section"><Cell ss:MergeAcross="2"><Data ss:Type="String">④ Coûts totaux</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Coût total d'acquisition (€)</Data></Cell><Cell><Data ss:Type="Number">${c.coutAcquisition}</Data></Cell><Cell><Data ss:Type="String">Achat + notaire</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Coût total opération (€)</Data></Cell><Cell><Data ss:Type="Number">${c.coutOperation}</Data></Cell><Cell><Data ss:Type="String">Acquisition + travaux</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Coût total réel (€)</Data></Cell><Cell><Data ss:Type="Number">${c.coutTotal}</Data></Cell><Cell><Data ss:Type="String">Tous frais inclus</Data></Cell></Row>
+  <Row/>
+  <Row ss:StyleID="section"><Cell ss:MergeAcross="2"><Data ss:Type="String">⑤ Résultats</Data></Cell></Row>
+  <Row ss:StyleID="${colorMB}"><Cell><Data ss:Type="String">Marge brute (€)</Data></Cell><Cell><Data ss:Type="Number">${c.margeBrute}</Data></Cell><Cell><Data ss:Type="String">Prix revente − coût opération</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Marge brute (%)</Data></Cell><Cell><Data ss:Type="Number">${(c.margeBrutePct*100).toFixed(2)}</Data></Cell><Cell><Data ss:Type="String">/ Prix de revente</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Imposition plus-value (€)</Data></Cell><Cell><Data ss:Type="Number">${c.impo}</Data></Cell><Cell><Data ss:Type="String">${((b.tauxPV||0.362)*100).toFixed(1)}% de la marge brute</Data></Cell></Row>
+  <Row ss:StyleID="${colorMN}"><Cell><Data ss:Type="String">Marge nette (€)</Data></Cell><Cell><Data ss:Type="Number">${c.margeNette}</Data></Cell><Cell><Data ss:Type="String">Marge brute − impôt PV</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Marge nette (%)</Data></Cell><Cell><Data ss:Type="Number">${(c.margeNettePct*100).toFixed(2)}</Data></Cell><Cell><Data ss:Type="String">/ Prix de revente</Data></Cell></Row>
+  <Row/>
+  <Row ss:StyleID="section"><Cell ss:MergeAcross="2"><Data ss:Type="String">⑥ Prix d'offre</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Prix max selon marge BRUTE 20% (€)</Data></Cell><Cell><Data ss:Type="Number">${Math.round(c.prixMaxBrute)}</Data></Cell><Cell><Data ss:Type="String">Prix à ne pas dépasser</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Prix max selon marge NETTE 15% (€)</Data></Cell><Cell><Data ss:Type="Number">${Math.round(c.prixMaxNette)}</Data></Cell><Cell><Data ss:Type="String">Prix à ne pas dépasser</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Prix d'offre conseillé (€)</Data></Cell><Cell><Data ss:Type="Number">${Math.round(c.prixOffreConseille)}</Data></Cell><Cell><Data ss:Type="String">Minimum des deux plafonds</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Décote vs prix affiché (%)</Data></Cell><Cell><Data ss:Type="Number">${(c.decote*100).toFixed(1)}</Data></Cell><Cell><Data ss:Type="String">Effort de négociation</Data></Cell></Row>
+  <Row/>
+  <Row ss:StyleID="section"><Cell ss:MergeAcross="2"><Data ss:Type="String">⑦ Verdict Go / No-Go</Data></Cell></Row>
+  <Row ss:StyleID="${colorGoBrut}"><Cell><Data ss:Type="String">Marge BRUTE</Data></Cell><Cell><Data ss:Type="String">${txtGoBrut} — ${(c.margeBrutePct*100).toFixed(1)}%</Data></Cell><Cell><Data ss:Type="String">Seuil : ≥20% GO / 18-20% LIMITE / &lt;18% NO-GO</Data></Cell></Row>
+  <Row ss:StyleID="${colorGoNet}"><Cell><Data ss:Type="String">Marge NETTE</Data></Cell><Cell><Data ss:Type="String">${txtGoNet} — ${(c.margeNettePct*100).toFixed(1)}%</Data></Cell><Cell><Data ss:Type="String">Seuil : ≥15% GO / 12-15% LIMITE / &lt;12% NO-GO</Data></Cell></Row>
+  <Row/>
+  <Row ss:StyleID="section"><Cell ss:MergeAcross="2"><Data ss:Type="String">⑧ Analyse au m²</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Prix d'achat au m² (€/m²)</Data></Cell><Cell><Data ss:Type="Number">${c.prixM2Achat}</Data></Cell><Cell/></Row>
+  <Row><Cell><Data ss:Type="String">Coût total au m² (€/m²)</Data></Cell><Cell><Data ss:Type="Number">${c.prixM2Cout}</Data></Cell><Cell/></Row>
+  <Row><Cell><Data ss:Type="String">Prix de revente au m² (€/m²)</Data></Cell><Cell><Data ss:Type="Number">${c.prixM2Revente}</Data></Cell><Cell/></Row>
+  <Row><Cell><Data ss:Type="String">Référence marché au m² (€/m²)</Data></Cell><Cell><Data ss:Type="Number">${b.prixM2Ref}</Data></Cell><Cell><Data ss:Type="String">DVF 2024</Data></Cell></Row>
+  <Row/>
+  <Row ss:StyleID="section"><Cell ss:MergeAcross="2"><Data ss:Type="String">📝 Notes</Data></Cell></Row>
+  <Row><Cell><Data ss:Type="String">Statut</Data></Cell><Cell><Data ss:Type="String">${statutLabel[b.statut]||b.statut}</Data></Cell><Cell/></Row>
+  <Row><Cell><Data ss:Type="String">Lien annonce</Data></Cell><Cell><Data ss:Type="String">${b.lien||''}</Data></Cell><Cell/></Row>
+  <Row><Cell><Data ss:Type="String">Notes</Data></Cell><Cell ss:MergeAcross="1"><Data ss:Type="String">${(b.notes||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</Data></Cell></Row>
+</Table>
+</Worksheet>`;
+  });
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:x="urn:schemas-microsoft-com:office:excel">
+<Styles>
+  <Style ss:ID="section">
+    <Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="11"/>
+    <Interior ss:Color="#677DA1" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="#DCFCE7">
+    <Interior ss:Color="#DCFCE7" ss:Pattern="Solid"/>
+    <Font ss:Bold="1"/>
+  </Style>
+  <Style ss:ID="#FEE2E2">
+    <Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/>
+    <Font ss:Bold="1"/>
+  </Style>
+  <Style ss:ID="#FEF3C7">
+    <Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/>
+    <Font ss:Bold="1"/>
+  </Style>
+</Styles>
+${sheets}
+</Workbook>`;
+
+  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toLocaleDateString('fr-FR').replace(/\//g,'-');
+  a.href = url;
+  a.download = `ImmoTrack_Export_${date}.xls`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
@@ -827,6 +1017,7 @@ function openPreview(id) {
       <div class="gonogo-badge ${c.gonogoNet}">${gLabel[c.gonogoNet]}</div>
     </div>
 
+    ${b.lien ? `<a href="${b.lien}" target="_blank" style="display:block;text-align:center;color:var(--accent);font-size:13px;font-weight:600;padding:10px;background:var(--surface2);border-radius:8px;text-decoration:none;margin-bottom:8px">🔗 Voir l'annonce LeBonCoin</a>` : ''}
     <button class="preview-btn" onclick="closePreview();showPage('analyse',${b.id})">📋 Voir l'analyse complète</button>
   `;
 
