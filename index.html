@@ -395,7 +395,7 @@ function renderBiensTable(biens, limit, mini) {
             <div class="prix-m2">${fmtE(b.prixRevente)}</div>
             <div class="marge ${c.margeNette>0?'pos':'neg'}">${fmtE(c.margeNette)}<br>${fmtP(c.margeNettePct)}</div>
             <div onclick="openPreview(${b.id});event.stopPropagation()" style="cursor:pointer"><span class="badge ${c.gonogoBrut}">${gLabel[c.gonogoBrut]}</span></div>
-            <div class="statut-wrap">
+            <div class="statut-wrap" onclick="event.stopPropagation()">
               <span class="statut-badge ${b.statut}" onclick="toggleStatutMenu(${b.id},this)">${statutLabel[b.statut]} ▾</span>
               <div class="statut-menu" id="sm-${b.id}">
                 ${Object.entries(statutLabel).map(([k,v])=>`<div class="statut-menu-item ${k}" onclick="changeStatut(${b.id},'${k}')">${v}</div>`).join('')}
