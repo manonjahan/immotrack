@@ -577,6 +577,13 @@ function renderAnalyse(main, biens) {
             ${Object.entries(statutLabel).map(([k,v])=>`<option value="${k}" ${b.statut===k?'selected':''}>${v}</option>`).join('')}
           </select>
         </div>
+        <div class="analyse-row">
+          <div class="analyse-row-label">Lien de l'annonce</div>
+          <div style="display:flex;gap:8px;align-items:center;flex:1">
+            <input class="analyse-input" type="url" value="${b.lien||''}" placeholder="https://www.leboncoin.fr/..." style="width:100%;font-family:inherit;font-size:12px" oninput="updateBienField(${b.id},'lien',this.value)">
+            ${b.lien?`<a href="${b.lien}" target="_blank" style="color:var(--accent);font-size:12px;font-weight:600;white-space:nowrap;text-decoration:none">🔗 Ouvrir</a>`:''}
+          </div>
+        </div>
         <div class="analyse-row" style="flex-direction:column;align-items:flex-start;gap:8px">
           <div class="analyse-row-label">Notes</div>
           <textarea style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;outline:none;min-height:80px" oninput="updateBienField(${b.id},'notes',this.value)">${b.notes||''}</textarea>
