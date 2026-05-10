@@ -271,7 +271,7 @@ function initDemo() {
 // ═══ CALCULS COMPLETS ═══
 function calcul(b) {
   // Utilise le prix vérifié DataImmo si disponible
-  const prixM2Actif = (b.verifie && b.prixM2RefVerifie) ? b.prixM2RefVerifie : (b.prixM2Ref || 0);
+  const prixM2Actif = (b.prixM2RefVerifie && b.prixM2RefVerifie > 0) ? b.prixM2RefVerifie : (b.prixM2Ref || 0);
   const notaire = Math.round(b.prix * (b.tauxNotaire||0.075));
   const fraisAgenceMt = b.fraisAgence ? Math.round(b.prixRevente * (b.tauxAgence||0.04)) : 0;
   const interetsMt = b.interets ? Math.round((b.montantEmprunte||0) * (b.tauxInteret||0.035) * (b.dureefranchise||12)/12) : 0;
@@ -298,7 +298,7 @@ function calcul(b) {
   const decote = b.prix > 0 ? (b.prix - prixOffreConseille)/b.prix : 0;
   const rendBrut = b.loyer > 0 && b.prixRevente > 0 ? b.loyer/b.prixRevente : 0;
   const rendNet = b.loyer > 0 && b.prixRevente > 0 ? (b.loyer*0.7)/b.prixRevente : 0;
-  return { notaire, fraisAgenceMt, interetsMt, coutAcquisition, coutOperation, coutTotal, margeBrute, margeBrutePct, impo, margeNette, margeNettePct, prixM2Achat, prixM2Cout, prixM2Revente, gonogoBrut, gonogoNet, prixMaxBrute, prixMaxNette, prixOffreConseille, decote, rendBrut, rendNet };
+  return { notaire, fraisAgenceMt, interetsMt, coutAcquisition, coutOperation, coutTotal, margeBrute, margeBrutePct, impo, margeNette, margeNettePct, prixM2Achat, prixM2Cout, prixM2Revente, gonogoBrut, gonogoNet, prixMaxBrute, prixMaxNette, prixOffreConseille, decote, rendBrut, rendNet, prixM2Actif };
 }
 
 const fmtE = n => n !== undefined && n !== null && !isNaN(n) ? Math.round(n).toLocaleString('fr-FR') + ' €' : '—';
@@ -634,6 +634,18 @@ function updateBienField(id, field, value) {
   const isNum = numFields.includes(field);
   const isBool = typeof value === 'boolean';
   biens[idx][field] = isBool ? value : (isNum ? parseFloat(value)||0 : value);
+
+  // Quand le prix vérifié change, recalcule le prix de revente estimé
+  if (field === 'prixM2RefVerifie' || field === 'surface') {
+    const refActif = biens[idx].prixM2RefVerifie > 0 ? biens[idx].prixM2RefVerifie : biens[idx].prixM2Ref;
+    if (refActif && biens[idx].surface) {
+      biens[idx].prixRevente = Math.round(refActif * biens[idx].surface);
+      // Mettre à jour le champ visuel
+      const inputRevente = document.getElementById('a-revente');
+      if (inputRevente) inputRevente.value = biens[idx].prixRevente;
+    }
+  }
+
   saveBiens(biens);
   updateCalcDisplay(biens[idx]);
   // Si c'est une option activable (bool), on re-render pour afficher/masquer les sous-champs
