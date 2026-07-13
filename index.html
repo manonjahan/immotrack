@@ -135,6 +135,25 @@
 
     .gonogo-row { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); }
     .gonogo-row:last-child { border-bottom:none; }
+
+    /* COMPARATIF PRIX ACTUEL VS OFFRE */
+    .cmp-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px 18px; }
+    .cmp-col { border:0.5px solid var(--border); border-radius:12px; overflow:hidden; }
+    .cmp-col.right { border:2px solid var(--blue); }
+    .cmp-col-header { background:var(--surface2); padding:12px 18px; border-bottom:0.5px solid var(--border); }
+    .cmp-col.right .cmp-col-header { background:var(--blue-bg); }
+    .cmp-col-title { font-size:13px; font-weight:600; color:var(--text); }
+    .cmp-col-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+    .cmp-col.right .cmp-col-sub { color:var(--accent); }
+    .cmp-row { display:flex; justify-content:space-between; align-items:center; padding:10px 18px; border-bottom:0.5px solid var(--border); font-size:12px; gap:8px; }
+    .cmp-row:last-child { border-bottom:none; }
+    .cmp-row-label { color:var(--muted); font-size:12px; }
+    .cmp-row-value { font-weight:600; font-family:'DM Mono',monospace; font-size:13px; text-align:right; }
+    .cmp-row-value.big { font-size:14px; }
+    .cmp-verdict { padding:12px 18px; display:flex; justify-content:space-between; align-items:center; }
+    .cmp-offre-input { background:var(--surface2); border:1px solid var(--border); color:var(--accent); padding:6px 10px; border-radius:6px; font-size:14px; font-weight:700; font-family:'DM Mono',monospace; text-align:right; width:130px; outline:none; }
+    .cmp-offre-input:focus { border-color:var(--accent); }
+    .cmp-offre-input::-webkit-outer-spin-button, .cmp-offre-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
     .gonogo-label { font-size:13px; font-weight:600; }
     .gonogo-badge { font-size:13px; font-weight:700; padding:6px 18px; border-radius:8px; }
     .gonogo-badge.go { background:var(--green-bg); color:var(--green); }
@@ -423,8 +442,6 @@ function renderAnalyse(main, biens) {
   const b = biens.find(x=>x.id===currentBienId);
   if (!b) { showPage('biens'); return; }
   const c = calcul(b);
-  const colorB = c.gonogoBrut==='go'?'highlight-green':c.gonogoBrut==='limite'?'highlight-orange':'highlight-red';
-  const colorN = c.gonogoNet==='go'?'highlight-green':c.gonogoNet==='limite'?'highlight-orange':'highlight-red';
 
   main.innerHTML = `
     <div class="analyse-header">
@@ -512,74 +529,59 @@ function renderAnalyse(main, biens) {
         `:''}
       </div>
 
-      <!-- ④ Coûts totaux -->
-      <div class="analyse-section">
-        <div class="analyse-section-title">④ Coûts totaux calculés</div>
-        <div class="analyse-row"><div class="analyse-row-label">Coût total d'acquisition (€)</div><div class="analyse-row-value"><span id="rv-coutAcq">${fmtE(c.coutAcquisition)}</span></div><div class="analyse-row-note">Achat + notaire</div></div>
-        <div class="analyse-row"><div class="analyse-row-label">Coût total de l'opération (€)</div><div class="analyse-row-value"><span id="rv-coutOp">${fmtE(c.coutOperation)}</span></div><div class="analyse-row-note">Acquisition + travaux</div></div>
-        <div class="analyse-row"><div class="analyse-row-label">Frais d'agence revente (€)</div><div class="analyse-row-value"><span id="rv-agence">${fmtE(c.fraisAgenceMt)}</span></div><div class="analyse-row-note">Activé si OUI ci-dessus</div></div>
-        <div class="analyse-row"><div class="analyse-row-label">Intérêts intercalaires (€)</div><div class="analyse-row-value"><span id="rv-interets">${fmtE(c.interetsMt)}</span></div><div class="analyse-row-note">Activé si OUI ci-dessus</div></div>
-        <div class="analyse-row"><div class="analyse-row-label" style="font-weight:600;color:var(--text)">Coût total réel (€)</div><div class="analyse-row-value highlight-orange"><span id="rv-coutTotal">${fmtE(c.coutTotal)}</span></div><div class="analyse-row-note">Tous frais inclus</div></div>
-      </div>
-
-      <!-- ⑤ Résultats -->
-      <div class="analyse-section">
-        <div class="analyse-section-title">⑤ Résultats</div>
-        <div class="analyse-row"><div class="analyse-row-label">Marge brute (€)</div><div class="analyse-row-value ${c.margeBrute>0?'highlight-green':'highlight-red'}"><span id="rv-margeBruteE">${fmtE(c.margeBrute)}</span></div><div class="analyse-row-note">Prix revente − (achat + notaire + travaux)</div></div>
-        <div class="analyse-row"><div class="analyse-row-label">Marge brute (%)</div><div class="analyse-row-value ${colorB}"><span id="rv-margeBrutePct">${fmtP(c.margeBrutePct)}</span></div><div class="analyse-row-note">/ Prix de revente</div></div>
-        <div class="analyse-row"><div class="analyse-row-label">Imposition plus-value (€)</div><div class="analyse-row-value"><span id="rv-impo">${fmtE(c.impo)}</span></div><div class="analyse-row-note">36,2% de la marge brute si positive</div></div>
-        <div class="analyse-row"><div class="analyse-row-label" style="font-weight:600;color:var(--text)">Marge nette (€)</div><div class="analyse-row-value ${c.margeNette>0?'highlight-green':'highlight-red'}"><span id="rv-margeNetteE">${fmtE(c.margeNette)}</span></div><div class="analyse-row-note">Marge brute − impôt PV − options</div></div>
-        <div class="analyse-row"><div class="analyse-row-label" style="font-weight:600;color:var(--text)">Marge nette (%)</div><div class="analyse-row-value ${colorN}"><span id="rv-margeNettePct">${fmtP(c.margeNettePct)}</span></div><div class="analyse-row-note">/ Prix de revente</div></div>
-      </div>
-
-      <!-- ⑥ Prix offre max -->
-      <div class="analyse-section">
-        <div class="analyse-section-title">⑥ Prix d'offre maximum à faire</div>
-        <div class="analyse-row"><div class="analyse-row-label">Marge nette cible (%)</div><input class="analyse-input blue" type="number" value="${((b.margeCibleNette||0.15)*100).toFixed(0)}" step="1" oninput="updateBienField(${b.id},'margeCibleNette',this.value/100)"><div class="analyse-row-note">Marge nette minimum acceptable</div></div>
-        <div class="analyse-row"><div class="analyse-row-label">Marge brute cible (%)</div><input class="analyse-input blue" type="number" value="${((b.margeCibleBrute||0.20)*100).toFixed(0)}" step="1" oninput="updateBienField(${b.id},'margeCibleBrute',this.value/100)"><div class="analyse-row-note">Marge brute minimum acceptable</div></div>
-        <div class="analyse-row"><div class="analyse-row-label">Prix max selon marge NETTE (€)</div><div class="analyse-row-value highlight-blue"><span id="rv-prixMaxNette">${fmtE(c.prixMaxNette)}</span></div><div class="analyse-row-note">→ Prix à ne pas dépasser</div></div>
-        <div class="analyse-row"><div class="analyse-row-label">Prix max selon marge BRUTE (€)</div><div class="analyse-row-value highlight-blue"><span id="rv-prixMaxBrute">${fmtE(c.prixMaxBrute)}</span></div><div class="analyse-row-note">→ Prix à ne pas dépasser</div></div>
-        <div class="analyse-row" style="background:var(--blue-bg)"><div class="analyse-row-label" style="font-weight:700;color:var(--text)">→ Prix d'offre conseillé (€)</div><div class="analyse-row-value highlight-blue" style="font-size:16px"><span id="rv-prixOffre">${fmtE(c.prixOffreConseille)}</span></div><div class="analyse-row-note">Minimum des deux plafonds</div></div>
-        <div class="analyse-row"><div class="analyse-row-label">↳ Décote sur prix affiché (%)</div><div class="analyse-row-value ${c.decote>0.1?'highlight-red':'highlight-orange'}"><span id="rv-decote">${fmtP(c.decote)}</span></div><div class="analyse-row-note">Effort de négociation nécessaire</div></div>
-        <div style="border-top:2px solid var(--accent);margin:8px 0;padding-top:12px">
-          <div style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.06em;text-transform:uppercase;padding:0 18px 8px">🎯 Simulateur d'offre</div>
-          <div class="analyse-row" style="background:var(--blue-bg)">
-            <div class="analyse-row-label" style="font-weight:700;color:var(--text)">Mon offre à faire (€)</div>
-            <input class="analyse-input blue" type="number" id="sim-offre-${b.id}"
-              value="${Math.round(c.prixOffreConseille)||b.prix}"
-              style="font-size:15px;font-weight:700"
-              oninput="simOffre(${b.id}, this.value)">
-            <div class="analyse-row-note">Modifie le montant pour voir la marge résultante</div>
+      <!-- ④ Comparatif prix actuel vs offre -->
+      <div class="analyse-section full">
+        <div class="analyse-section-title">④ Comparatif — prix actuel vs offre à 20% de marge brute</div>
+        <div class="cmp-grid">
+          <div class="cmp-col">
+            <div class="cmp-col-header">
+              <div class="cmp-col-title">Prix actuel</div>
+              <div class="cmp-col-sub">Prix affiché — fixe</div>
+            </div>
+            <div class="cmp-row"><div class="cmp-row-label">Prix d'achat</div><div class="cmp-row-value">${fmtE(b.prix)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Frais de notaire</div><div class="cmp-row-value" id="cmpL-notaire-${b.id}">${fmtE(c.notaire)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Travaux estimés</div><div class="cmp-row-value">${fmtE(b.travaux||0)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Coût total opération</div><div class="cmp-row-value" id="cmpL-coutOp-${b.id}">${fmtE(c.coutTotal)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Prix de revente visé</div><div class="cmp-row-value">${fmtE(b.prixRevente)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Marge brute</div><div class="cmp-row-value" id="cmpL-margeBrute-${b.id}" style="color:${c.margeBrute>0?'var(--green)':'var(--red)'}">${fmtE(c.margeBrute)} (${fmtP(c.margeBrutePct)})</div></div>
+            <div class="cmp-row"><div class="cmp-row-label" style="font-weight:600;color:var(--text)">Marge nette après impôt</div><div class="cmp-row-value big" id="cmpL-margeNette-${b.id}" style="color:${c.margeNette>0?'var(--green)':'var(--red)'}">${fmtE(c.margeNette)} (${fmtP(c.margeNettePct)})</div></div>
+            <div class="cmp-verdict" id="cmpL-verdict-wrap-${b.id}" style="background:${c.gonogoNet==='go'?'var(--green-bg)':c.gonogoNet==='limite'?'var(--orange-bg)':'var(--red-bg)'}">
+              <span style="font-size:12px;font-weight:600">Verdict</span>
+              <span class="gonogo-badge ${c.gonogoNet}" id="cmpL-verdict-${b.id}">${gLabel[c.gonogoNet]}</span>
+            </div>
           </div>
-          <div class="analyse-row">
-            <div class="analyse-row-label">Marge brute si cette offre est acceptée</div>
-            <div class="analyse-row-value" id="sim-marge-brute-${b.id}" style="font-size:15px;font-weight:700">—</div>
-            <div class="analyse-row-note"></div>
-          </div>
-          <div class="analyse-row">
-            <div class="analyse-row-label">Marge nette après impôt</div>
-            <div class="analyse-row-value" id="sim-marge-nette-${b.id}" style="font-size:15px;font-weight:700">—</div>
-            <div class="analyse-row-note"></div>
-          </div>
-          <div class="analyse-row">
-            <div class="analyse-row-label">Verdict Go/No-Go si offre acceptée</div>
-            <div id="sim-gonogo-${b.id}" style="padding:6px 14px;border-radius:8px;font-size:13px;font-weight:700">—</div>
-            <div class="analyse-row-note"></div>
+          <div class="cmp-col right">
+            <div class="cmp-col-header">
+              <div class="cmp-col-title">Offre à 20% marge brute</div>
+              <div class="cmp-col-sub">Prix recalculé automatiquement — modifiable</div>
+            </div>
+            <div class="cmp-row"><div class="cmp-row-label">Prix d'offre</div><input class="cmp-offre-input" type="number" id="cmp-offre-${b.id}" value="${Math.round(c.prixMaxBrute)||b.prix}" oninput="updateComparatif(${b.id}, this.value)"></div>
+            <div class="cmp-row"><div class="cmp-row-label">Frais de notaire</div><div class="cmp-row-value" id="cmpR-notaire-${b.id}">—</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Travaux estimés</div><div class="cmp-row-value">${fmtE(b.travaux||0)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Coût total opération</div><div class="cmp-row-value" id="cmpR-coutOp-${b.id}">—</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Prix de revente visé</div><div class="cmp-row-value">${fmtE(b.prixRevente)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Marge brute</div><div class="cmp-row-value" id="cmpR-margeBrute-${b.id}">—</div></div>
+            <div class="cmp-row"><div class="cmp-row-label" style="font-weight:600;color:var(--text)">Marge nette après impôt</div><div class="cmp-row-value big" id="cmpR-margeNette-${b.id}">—</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Négociation vs prix actuel</div><div class="cmp-row-value" id="cmpR-nego-${b.id}">—</div></div>
+            <div class="cmp-verdict" id="cmpR-verdict-wrap-${b.id}">
+              <span style="font-size:12px;font-weight:600">Verdict</span>
+              <span class="gonogo-badge" id="cmpR-verdict-${b.id}">—</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ⑦ Go/No-Go -->
+      <!-- ⑤ Go/No-Go -->
       <div class="analyse-section">
-        <div class="analyse-section-title">⑦ Verdict Go / No-Go</div>
+        <div class="analyse-section-title">⑤ Verdict Go / No-Go</div>
         <div class="gonogo-row"><div class="gonogo-label">Marge brute actuelle</div><div class="gonogo-badge ${c.gonogoBrut}" id="rv-gonogoBrut">${gLabel[c.gonogoBrut]} — ${fmtP(c.margeBrutePct)}</div></div>
         <div class="gonogo-row"><div class="gonogo-label">Marge nette actuelle</div><div class="gonogo-badge ${c.gonogoNet}" id="rv-gonogoNet">${gLabel[c.gonogoNet]} — ${fmtP(c.margeNettePct)}</div></div>
         <div style="padding:10px 18px;font-size:11px;color:var(--muted)">Seuils bruts : ✅ ≥20% | ⚠️ 18-20% | ❌ &lt;18% — Seuils nets : ✅ ≥15% | ⚠️ 12-15% | ❌ &lt;12%</div>
       </div>
 
-      <!-- ⑧ Analyse m² -->
+      <!-- ⑥ Analyse m² -->
       <div class="analyse-section">
-        <div class="analyse-section-title">⑧ Analyse au m²</div>
+        <div class="analyse-section-title">⑥ Analyse au m²</div>
         <div class="analyse-row"><div class="analyse-row-label">Prix d'achat au m² (€/m²)</div><div class="analyse-row-value"><span id="rv-m2Achat">${fmtE(c.prixM2Achat).replace(' €',' €/m²')}</span></div><div class="analyse-row-note">Prix actuel annonce / surface</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Coût total au m² (€/m²)</div><div class="analyse-row-value"><span id="rv-m2Cout">${fmtE(c.prixM2Cout).replace(' €',' €/m²')}</span></div><div class="analyse-row-note">Acquisition + travaux / surface</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Prix de revente au m² (€/m²)</div><div class="analyse-row-value"><span id="rv-m2Revente">${fmtE(c.prixM2Revente).replace(' €',' €/m²')}</span></div><div class="analyse-row-note">Prix de revente visé / surface</div></div>
@@ -589,9 +591,9 @@ function renderAnalyse(main, biens) {
         <div class="analyse-row"><div class="analyse-row-label">Écart revente vs marché (%)</div><div class="analyse-row-value ${c.prixM2Revente>(b.prixM2Ref*1.1)?'highlight-orange':''}}"><span id="rv-ecart">${b.prixM2Ref>0?((c.prixM2Revente/b.prixM2Ref-1)*100).toFixed(1)+'%':'—'}</span></div><div class="analyse-row-note">Positif = vous visez au-dessus du marché actuel</div></div>
       </div>
 
-      <!-- ⑨ Rentabilité locative -->
+      <!-- ⑦ Rentabilité locative -->
       <div class="analyse-section">
-        <div class="analyse-section-title">⑨ Rentabilité locative (si garde du bien)</div>
+        <div class="analyse-section-title">⑦ Rentabilité locative (si garde du bien)</div>
         <div class="analyse-row"><div class="analyse-row-label">Rendement brut (%)</div><div class="analyse-row-value"><span id="rv-rendBrut">${c.rendBrut>0?fmtP(c.rendBrut):'Loyer non renseigné'}</span></div><div class="analyse-row-note">Loyer annuel brut / prix de revente</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Rendement net estimé (%)</div><div class="analyse-row-value"><span id="rv-rendNet">${c.rendNet>0?fmtP(c.rendNet):'—'}</span></div><div class="analyse-row-note">Loyer × 70% (charges, vacance, fiscalité) / revente</div></div>
       </div>
@@ -692,6 +694,9 @@ function updateCalcDisplay(b) {
   if (ggB) { ggB.textContent = gLabel[c.gonogoBrut]+' — '+fmtP(c.margeBrutePct); ggB.className='gonogo-badge '+c.gonogoBrut; }
   const ggN = document.getElementById('rv-gonogoNet');
   if (ggN) { ggN.textContent = gLabel[c.gonogoNet]+' — '+fmtP(c.margeNettePct); ggN.className='gonogo-badge '+c.gonogoNet; }
+
+  // Rafraîchit le comparatif prix actuel / offre (conserve l'offre déjà saisie manuellement)
+  updateComparatif(b.id);
 }
 
 // ═══ COMPARAISON ═══
@@ -844,15 +849,8 @@ window.addBienFromLBC=function(data){
   showPage('analyse', newB.id);
 };
 
-// ═══ SIMULATEUR D'OFFRE ═══
-function simOffre(id, offreVal) {
-  const biens = getBiens();
-  const b = biens.find(x => x.id === id);
-  if (!b) return;
-  const offre = parseFloat(offreVal) || 0;
-  if (!offre) return;
-
-  // Calcule avec le prix d'offre simulé
+// ═══ COMPARATIF PRIX ACTUEL VS OFFRE ═══
+function calculOffre(b, offre) {
   const notaire = Math.round(offre * (b.tauxNotaire||0.075));
   const coutOp = offre + notaire + (b.travaux||0);
   const margeBrute = b.prixRevente - coutOp;
@@ -860,34 +858,55 @@ function simOffre(id, offreVal) {
   const impo = margeBrute > 0 ? Math.round(margeBrute * (b.tauxPV||0.362)) : 0;
   const margeNette = margeBrute - impo;
   const margeNettePct = b.prixRevente > 0 ? margeNette/b.prixRevente : 0;
-  const gonogo = margeBrutePct >= 0.20 ? 'go' : margeBrutePct >= 0.18 ? 'limite' : 'nogo';
-
-  const colorB = margeBrute > 0 ? 'highlight-green' : 'highlight-red';
-  const colorN = margeNette > 0 ? 'highlight-green' : 'highlight-red';
-
-  const elMB = document.getElementById('sim-marge-brute-' + id);
-  const elMN = document.getElementById('sim-marge-nette-' + id);
-  const elGG = document.getElementById('sim-gonogo-' + id);
-
-  if (elMB) {
-    elMB.className = 'analyse-row-value ' + colorB;
-    elMB.textContent = fmtE(margeBrute) + ' (' + fmtP(margeBrutePct) + ')';
-  }
-  if (elMN) {
-    elMN.className = 'analyse-row-value ' + colorN;
-    elMN.textContent = fmtE(margeNette) + ' (' + fmtP(margeNettePct) + ')';
-  }
-  if (elGG) {
-    elGG.className = 'gonogo-badge ' + gonogo;
-    elGG.textContent = gLabel[gonogo];
-  }
+  const gonogoBrut = margeBrutePct >= 0.20 ? 'go' : margeBrutePct >= 0.18 ? 'limite' : 'nogo';
+  const gonogoNet = margeNettePct >= 0.15 ? 'go' : margeNettePct >= 0.12 ? 'limite' : 'nogo';
+  return { notaire, coutOp, margeBrute, margeBrutePct, margeNette, margeNettePct, gonogoBrut, gonogoNet };
 }
 
-// Initialise le simulateur d'offre après render
+function updateComparatif(id, offreVal) {
+  const biens = getBiens();
+  const b = biens.find(x => x.id === id);
+  if (!b) return;
+  const c = calcul(b);
+
+  // Colonne gauche — prix actuel, fixe
+  const setL = (key, val) => { const el = document.getElementById('cmpL-'+key+'-'+id); if (el) el.textContent = val; };
+  setL('notaire', fmtE(c.notaire));
+  setL('coutOp', fmtE(c.coutTotal));
+  setL('margeBrute', fmtE(c.margeBrute)+' ('+fmtP(c.margeBrutePct)+')');
+  setL('margeNette', fmtE(c.margeNette)+' ('+fmtP(c.margeNettePct)+')');
+  const elVL = document.getElementById('cmpL-verdict-'+id);
+  if (elVL) { elVL.textContent = gLabel[c.gonogoNet]; elVL.className = 'gonogo-badge '+c.gonogoNet; }
+  const wrapL = document.getElementById('cmpL-verdict-wrap-'+id);
+  if (wrapL) wrapL.style.background = c.gonogoNet==='go'?'var(--green-bg)':c.gonogoNet==='limite'?'var(--orange-bg)':'var(--red-bg)';
+
+  // Colonne droite — offre, modifiable (auto-initialisée à 20% de marge brute)
+  let offre = parseFloat(offreVal);
+  if (isNaN(offre)) {
+    const input = document.getElementById('cmp-offre-'+id);
+    offre = input ? parseFloat(input.value) : Math.round(c.prixMaxBrute);
+  }
+  if (!offre || offre <= 0) offre = Math.round(c.prixMaxBrute) || b.prix;
+  const r = calculOffre(b, offre);
+  const setR = (key, val) => { const el = document.getElementById('cmpR-'+key+'-'+id); if (el) el.textContent = val; };
+  setR('notaire', fmtE(r.notaire));
+  setR('coutOp', fmtE(r.coutOp));
+  setR('margeBrute', fmtE(r.margeBrute)+' ('+fmtP(r.margeBrutePct)+')');
+  setR('margeNette', fmtE(r.margeNette)+' ('+fmtP(r.margeNettePct)+')');
+  const ecartMt = b.prix - offre;
+  const ecartPct = b.prix > 0 ? ecartMt/b.prix : 0;
+  setR('nego', fmtE(ecartMt)+' ('+fmtP(ecartPct)+')');
+  const elVR = document.getElementById('cmpR-verdict-'+id);
+  if (elVR) { elVR.textContent = gLabel[r.gonogoNet]; elVR.className = 'gonogo-badge '+r.gonogoNet; }
+  const wrapR = document.getElementById('cmpR-verdict-wrap-'+id);
+  if (wrapR) wrapR.style.background = r.gonogoNet==='go'?'var(--green-bg)':r.gonogoNet==='limite'?'var(--orange-bg)':'var(--red-bg)';
+}
+
+// Initialise les colonnes comparatives après render
 function initSimOffre() {
-  document.querySelectorAll('[id^="sim-offre-"]').forEach(input => {
-    const id = parseInt(input.id.replace('sim-offre-', ''));
-    simOffre(id, input.value);
+  document.querySelectorAll('[id^="cmp-offre-"]').forEach(input => {
+    const id = parseInt(input.id.replace('cmp-offre-', ''));
+    updateComparatif(id, input.value);
   });
 }
 
