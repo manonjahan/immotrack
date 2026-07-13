@@ -561,7 +561,7 @@ function renderAnalyse(main, biens) {
               <div class="cmp-col-title">Offre à 20% marge brute</div>
               <div class="cmp-col-sub">Prix recalculé automatiquement — modifiable</div>
             </div>
-            <div class="cmp-row"><div class="cmp-row-label">Prix d'offre</div><input class="cmp-offre-input" type="number" id="cmp-offre-${b.id}" value="${Math.round(c.prixMaxBrute)||b.prix}" oninput="updateComparatif(${b.id}, this.value)"></div>
+            <div class="cmp-row"><div class="cmp-row-label">Prix d'offre</div><input class="cmp-offre-input" type="number" id="cmp-offre-${b.id}" value="${b.prixOffreManuel?Math.round(b.prixOffreManuel):(Math.round(c.prixMaxBrute)||b.prix)}" oninput="updateBienField(${b.id},'prixOffreManuel',this.value)"></div>
             <div class="cmp-row"><div class="cmp-row-label">Frais de notaire</div><div class="cmp-row-value" id="cmpR-notaire-${b.id}">—</div></div>
             <div class="cmp-row"><div class="cmp-row-label">Travaux estimés</div><div class="cmp-row-value">${fmtE(b.travaux||0)}</div></div>
             <div class="cmp-row"><div class="cmp-row-label">Coût total opération</div><div class="cmp-row-value" id="cmpR-coutOp-${b.id}">—</div></div>
@@ -638,7 +638,7 @@ function updateBienField(id, field, value) {
   const biens = getBiens();
   const idx = biens.findIndex(b=>b.id===id);
   if (idx<0) return;
-  const numFields = ['prix','surface','travaux','prixRevente','prixM2Ref','loyer','montantEmprunte','tauxInteret','dureefranchise','tauxAgence','margeCibleNette','margeCibleBrute','tauxNotaire','tauxPV','prixM2RefVerifie'];
+  const numFields = ['prix','surface','travaux','prixRevente','prixM2Ref','loyer','montantEmprunte','tauxInteret','dureefranchise','tauxAgence','margeCibleNette','margeCibleBrute','tauxNotaire','tauxPV','prixM2RefVerifie','prixOffreManuel'];
   const isNum = numFields.includes(field);
   const isBool = typeof value === 'boolean';
   biens[idx][field] = isBool ? value : (isNum ? parseFloat(value)||0 : value);
