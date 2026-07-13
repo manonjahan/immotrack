@@ -7,10 +7,10 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0F1117; --surface: #1A1D27; --surface2: #22263A; --border: #2A2F45;
-      --text: #E8EAF0; --muted: #6B7280; --green: #10B981; --green-bg: #0D2E22;
-      --orange: #F59E0B; --orange-bg: #2D2008; --red: #EF4444; --red-bg: #2D0E0E;
-      --blue: #6366F1; --blue-bg: #1A1B3A; --accent: #818CF8;
+      --bg: #F7F5F1; --surface: #FFFFFF; --surface2: #F0ECE4; --border: #E4E0D8;
+      --text: #2B2924; --muted: #918D82; --green: #4C6B44; --green-bg: #E4EEDF;
+      --orange: #9C7A3F; --orange-bg: #F3E9D4; --red: #9C5B44; --red-bg: #F5E4DD;
+      --blue: #4F6D89; --blue-bg: #E7EEF3; --accent: #3D5A73;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
@@ -75,14 +75,14 @@
 
     .statut-badge { display:inline-flex; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:600; cursor:pointer; user-select:none; }
     .statut-badge.prospect { background:var(--blue-bg); color:var(--accent); }
-    .statut-badge.visite { background:#1A2D1A; color:#4ADE80; }
-    .statut-badge.offre { background:#2D1A0E; color:#FB923C; }
+    .statut-badge.visite { background:#E4EEDF; color:#3B5B34; }
+    .statut-badge.offre { background:#F5E6D0; color:#9C5820; }
     .statut-badge.refuse { background:var(--red-bg); color:var(--red); }
     .statut-badge.gagne { background:var(--green-bg); color:var(--green); }
-    .statut-badge.a_visiter { background:#1A1A3A; color:#C084FC; }
-    .statut-badge.estimation { background:#1A2A2A; color:#22D3EE; }
-    .statut-badge.abandon { background:#2A1A2A; color:#A78BFA; }
-    .verifie-badge { display:inline-flex; align-items:center; gap:3px; background:#1A2A3A; border:1.5px solid #3B82F6; color:#60A5FA; font-size:10px; font-weight:700; padding:2px 7px; border-radius:99px; }
+    .statut-badge.a_visiter { background:#EEE7F5; color:#6B4FA0; }
+    .statut-badge.estimation { background:#DEEEF0; color:#2A7C8C; }
+    .statut-badge.abandon { background:#F3E7EA; color:#8B5A72; }
+    .verifie-badge { display:inline-flex; align-items:center; gap:3px; background:#E7EEF3; border:1.5px solid #4F6D89; color:#3D5A73; font-size:10px; font-weight:700; padding:2px 7px; border-radius:99px; }
 
     .prix-m2 { font-family:'DM Mono',monospace; font-size:12px; color:var(--muted); }
     .marge { font-family:'DM Mono',monospace; font-size:12px; font-weight:500; }
@@ -99,17 +99,17 @@
 
     /* STATUT DROPDOWN */
     .statut-wrap { position:relative; }
-    .statut-menu { display:none; position:fixed; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:6px; z-index:99999; min-width:140px; box-shadow:0 8px 24px rgba(0,0,0,.4); }
+    .statut-menu { display:none; position:fixed; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:6px; z-index:99999; min-width:140px; box-shadow:0 8px 24px rgba(43,41,36,.14); }
     .statut-menu-item { padding:7px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
     .statut-menu-item:hover { background:var(--border); }
     .statut-menu-item.prospect { color:var(--accent); }
-    .statut-menu-item.visite { color:#4ADE80; }
-    .statut-menu-item.offre { color:#FB923C; }
+    .statut-menu-item.visite { color:#3B5B34; }
+    .statut-menu-item.offre { color:#9C5820; }
     .statut-menu-item.refuse { color:var(--red); }
     .statut-menu-item.gagne { color:var(--green); }
-    .statut-menu-item.a_visiter { color:#C084FC; }
-    .statut-menu-item.estimation { color:#22D3EE; }
-    .statut-menu-item.abandon { color:#A78BFA; }
+    .statut-menu-item.a_visiter { color:#6B4FA0; }
+    .statut-menu-item.estimation { color:#2A7C8C; }
+    .statut-menu-item.abandon { color:#8B5A72; }
 
     /* ANALYSE PAGE */
     .analyse-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
@@ -130,7 +130,7 @@
     .analyse-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
     .analyse-input[type=number] { -moz-appearance:textfield; appearance:textfield; }
     .analyse-input:focus { border-color:var(--accent); }
-    .analyse-input.blue { color:#93C5FD; }
+    .analyse-input.blue { color:#35618C; }
     .analyse-select { background:var(--surface2); border:1px solid var(--border); color:var(--accent); padding:6px 10px; border-radius:6px; font-size:13px; font-weight:700; font-family:inherit; outline:none; cursor:pointer; }
 
     .gonogo-row { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); }
@@ -239,7 +239,7 @@
       <button class="export-btn" onclick="exportData()" title="Télécharger une sauvegarde de vos biens">💾 Exporter</button>
       <button class="export-btn import" onclick="document.getElementById('import-input').click()" title="Restaurer une sauvegarde">📂 Importer</button>
       <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
-      <button class="export-btn" onclick="exportExcel()" title="Exporter tous les biens en Excel (un onglet par bien)" style="border-color:#22D3EE;color:#22D3EE;margin-top:4px;width:100%">📊 Export Excel</button>
+      <button class="export-btn" onclick="exportExcel()" title="Exporter tous les biens en Excel (un onglet par bien)" style="border-color:#2A7C8C;color:#2A7C8C;margin-top:4px;width:100%">📊 Export Excel</button>
     </div>
   </div>
 </aside>
@@ -409,7 +409,7 @@ function renderBiensTable(biens, limit, mini) {
             </div>
             <div class="action-btns">
               <button class="like-btn ${b.like?'liked':''}" onclick="toggleLike(${b.id});event.stopPropagation()" title="${b.like?'Retirer des favoris':'Ajouter aux favoris'}">${b.like?'❤️':'🤍'}</button>
-              <button onclick="toggleVerifie(${b.id});event.stopPropagation()" title="${b.verifie?'Retirer vérification DataImmo':'Marquer comme vérifié DataImmo'}" style="background:${b.verifie?'#1A2A3A':'transparent'};border:${b.verifie?'1.5px solid #3B82F6':'1.5px solid var(--border)'};color:${b.verifie?'#60A5FA':'var(--muted)'};padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">🔵${b.verifie?' ✓':''}</button>
+              <button onclick="toggleVerifie(${b.id});event.stopPropagation()" title="${b.verifie?'Retirer vérification DataImmo':'Marquer comme vérifié DataImmo'}" style="background:${b.verifie?'#E7EEF3':'transparent'};border:${b.verifie?'1.5px solid #4F6D89':'1.5px solid var(--border)'};color:${b.verifie?'#3D5A73':'var(--muted)'};padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">🔵${b.verifie?' ✓':''}</button>
               <button class="action-btn" onclick="showPage('analyse',${b.id});event.stopPropagation()">📋 Analyse</button>
               <button class="action-btn danger" onclick="supprimerBien(${b.id});event.stopPropagation()">🗑</button>
             </div>
@@ -479,7 +479,7 @@ function renderAnalyse(main, biens) {
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <input class="analyse-input blue" type="number" value="${b.prixM2RefVerifie||''}" placeholder="Ex: 5200" id="a-refv" oninput="updateBienField(${b.id},'prixM2RefVerifie',this.value)">
-            <button onclick="(function(){var biens=getBiens();var idx=biens.findIndex(function(x){return x.id===${b.id}});if(idx>=0){biens[idx].verifie=!!biens[idx].prixM2RefVerifie;saveBiens(biens);render();}})()" style="background:${b.prixM2RefVerifie?'#1A2A3A':'var(--surface2)'};border:1.5px solid ${b.prixM2RefVerifie?'#3B82F6':'var(--border)'};color:${b.prixM2RefVerifie?'#60A5FA':'var(--muted)'};padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;white-space:nowrap">${b.prixM2RefVerifie?'🔵 Vérifié ✓':'🔵 Activer'}</button>
+            <button onclick="(function(){var biens=getBiens();var idx=biens.findIndex(function(x){return x.id===${b.id}});if(idx>=0){biens[idx].verifie=!!biens[idx].prixM2RefVerifie;saveBiens(biens);render();}})()" style="background:${b.prixM2RefVerifie?'#E7EEF3':'var(--surface2)'};border:1.5px solid ${b.prixM2RefVerifie?'#4F6D89':'var(--border)'};color:${b.prixM2RefVerifie?'#3D5A73':'var(--muted)'};padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;white-space:nowrap">${b.prixM2RefVerifie?'🔵 Vérifié ✓':'🔵 Activer'}</button>
           </div>
           <div class="analyse-row-note">Saisi manuellement depuis DataImmo — remplace DVF${b.prixM2RefVerifie&&b.verifie?' ✅ Actif':''}</div>
         </div>
