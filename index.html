@@ -76,12 +76,15 @@
     .statut-badge { display:inline-flex; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:600; cursor:pointer; user-select:none; }
     .statut-badge.prospect { background:var(--blue-bg); color:var(--accent); }
     .statut-badge.visite { background:#E4EEDF; color:#3B5B34; }
+    .statut-badge.visite_planifiee { background:#E6E9F5; color:#4A5590; }
     .statut-badge.offre { background:#F5E6D0; color:#9C5820; }
+    .statut-badge.attente_agent { background:#F5EED0; color:#8A6D1E; }
     .statut-badge.refuse { background:var(--red-bg); color:var(--red); }
     .statut-badge.gagne { background:var(--green-bg); color:var(--green); }
     .statut-badge.a_visiter { background:#EEE7F5; color:#6B4FA0; }
     .statut-badge.estimation { background:#DEEEF0; color:#2A7C8C; }
     .statut-badge.abandon { background:#F3E7EA; color:#8B5A72; }
+    .statut-badge.archive { background:#EAE7E0; color:#6B6558; }
     .verifie-badge { display:inline-flex; align-items:center; gap:3px; background:#E7EEF3; border:1.5px solid #4F6D89; color:#3D5A73; font-size:10px; font-weight:700; padding:2px 7px; border-radius:99px; }
 
     .prix-m2 { font-family:'DM Mono',monospace; font-size:12px; color:var(--muted); }
@@ -104,12 +107,15 @@
     .statut-menu-item:hover { background:var(--border); }
     .statut-menu-item.prospect { color:var(--accent); }
     .statut-menu-item.visite { color:#3B5B34; }
+    .statut-menu-item.visite_planifiee { color:#4A5590; }
     .statut-menu-item.offre { color:#9C5820; }
+    .statut-menu-item.attente_agent { color:#8A6D1E; }
     .statut-menu-item.refuse { color:var(--red); }
     .statut-menu-item.gagne { color:var(--green); }
     .statut-menu-item.a_visiter { color:#6B4FA0; }
     .statut-menu-item.estimation { color:#2A7C8C; }
     .statut-menu-item.abandon { color:#8B5A72; }
+    .statut-menu-item.archive { color:#6B6558; }
 
     /* ANALYSE PAGE */
     .analyse-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
@@ -322,7 +328,7 @@ function calcul(b) {
 
 const fmtE = n => n !== undefined && n !== null && !isNaN(n) ? Math.round(n).toLocaleString('fr-FR') + ' €' : '—';
 const fmtP = n => n ? (n*100).toFixed(1)+'%' : '—';
-const statutLabel = { prospect:'Prospect', a_visiter:'À visiter', estimation:'Estimation en cours', visite:'Visité', offre:'Offre faite', refuse:'Refusé', abandon:'Abandonné', gagne:'Acquis' };
+const statutLabel = { prospect:'Prospect', a_visiter:'À visiter', estimation:'Estimation en cours', visite_planifiee:'Visite planifiée', visite:'Visité', attente_agent:'En attente rappel agent immo', offre:'Offre faite', refuse:'Refusé', abandon:'Abandonné', gagne:'Acquis', archive:'Archivage' };
 const gLabel = { go:'✅ GO', limite:'⚠️ LIMITE', nogo:'❌ NO-GO' };
 
 // ═══ NAVIGATION ═══
@@ -355,7 +361,7 @@ function render() {
 
 // ═══ DASHBOARD ═══
 function renderDashboard(main, biens, today) {
-  const actifs = biens.filter(b=>b.statut!=='refuse').length;
+  const actifs = biens.filter(b=>b.statut!=='refuse'&&b.statut!=='archive').length;
   const offres = biens.filter(b=>b.statut==='offre').length;
   const gagnes = biens.filter(b=>b.statut==='gagne').length;
   const biensAcquis = biens.filter(b=>b.statut==='gagne');
@@ -701,7 +707,7 @@ function updateCalcDisplay(b) {
 
 // ═══ COMPARAISON ═══
 function renderComparaison(main, biens) {
-  const actifs = biens.filter(b=>b.statut!=='refuse');
+  const actifs = biens.filter(b=>b.statut!=='refuse'&&b.statut!=='archive');
   main.innerHTML = `
     <div class="page-header"><div class="page-title">Comparaison</div><div class="page-date">Classement par rentabilité</div></div>
     ${actifs.length===0?`<div class="empty-state"><div class="emoji">⚖️</div><p>Aucun bien actif à comparer</p></div>`:`
@@ -930,7 +936,7 @@ function sortBiens(biens) {
     else if (field === 'margeBrute') { va = calcul(a).margeBrutePct; vb = calcul(b).margeBrutePct; }
     else if (field === 'margeNette') { va = calcul(a).margeNettePct; vb = calcul(b).margeNettePct; }
     else if (field === 'statut') { 
-      const order = { gagne:0, offre:1, estimation:2, a_visiter:3, visite:4, prospect:5, refuse:6 };
+      const order = { gagne:0, offre:1, visite_planifiee:2, attente_agent:3, estimation:4, a_visiter:5, visite:6, prospect:7, refuse:8, abandon:9, archive:10 };
       va = order[a.statut] ?? 9; vb = order[b.statut] ?? 9;
     }
     else if (field === 'like') { va = a.like?1:0; vb = b.like?1:0; }
