@@ -60,13 +60,18 @@
     .btn-add:hover { opacity:.85; }
 
     .biens-table { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:visible; margin-bottom:28px; }
-    .table-head { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 100px 120px 160px; padding:12px 20px; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-radius:14px 14px 0 0; overflow:hidden; }
-    .table-row { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 100px 120px 160px; padding:14px 20px; border-bottom:1px solid var(--border); font-size:13px; align-items:center; transition:background .1s; }
+    .table-head { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 100px 120px 220px; padding:12px 20px; border-bottom:1px solid var(--border); font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; border-radius:14px 14px 0 0; overflow:hidden; }
+    .table-row { display:grid; grid-template-columns:2fr 80px 90px 90px 90px 100px 120px 220px; padding:14px 20px; border-bottom:1px solid var(--border); font-size:13px; align-items:center; transition:background .1s; }
     .table-row:last-child { border-bottom:none; border-radius:0 0 14px 14px; }
     .table-row:hover { background:var(--surface2); }
 
     .bien-name { font-weight:600; font-size:13.5px; }
     .bien-addr { font-size:11px; color:var(--muted); margin-top:2px; }
+
+    .date-group-header { display:flex; align-items:baseline; gap:8px; padding:12px 20px 8px; background:var(--surface2); border-bottom:0.5px solid var(--border); }
+    .date-group-header:not(:first-child) { border-top:0.5px solid var(--border); }
+    .date-group-header-label { font-size:11px; font-weight:700; color:var(--text); letter-spacing:.03em; }
+    .date-group-header-count { font-size:11px; color:var(--muted); }
 
     .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:99px; font-size:11px; font-weight:600; }
     .badge.go { background:var(--green-bg); color:var(--green); }
@@ -92,7 +97,7 @@
     .marge.pos { color:var(--green); }
     .marge.neg { color:var(--red); }
 
-    .action-btns { display:flex; gap:6px; }
+    .action-btns { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
     .action-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:5px 10px; border-radius:6px; font-size:11px; cursor:pointer; font-family:inherit; transition:all .15s; white-space:nowrap; }
     .action-btn:hover { border-color:var(--accent); color:var(--accent); }
     .action-btn.danger:hover { border-color:var(--red); color:var(--red); }
@@ -328,12 +333,24 @@ function calcul(b) {
 
 const fmtE = n => n !== undefined && n !== null && !isNaN(n) ? Math.round(n).toLocaleString('fr-FR') + ' €' : '—';
 const fmtP = n => n ? (n*100).toFixed(1)+'%' : '—';
+function formatDateGroup(dateStr) {
+  if (!dateStr) return 'Date inconnue';
+  const d = new Date(dateStr+'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diffDays = Math.round((today - d)/86400000);
+  let label = d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  label = label.charAt(0).toUpperCase()+label.slice(1);
+  if (diffDays === 0) return "Aujourd'hui — "+label;
+  if (diffDays === 1) return "Hier — "+label;
+  return label;
+}
 const statutLabel = { prospect:'Prospect', a_visiter:'À visiter', estimation:'Estimation en cours', visite_planifiee:'Visite planifiée', visite:'Visité', attente_agent:'En attente rappel agent immo', offre:'Offre faite', refuse:'Refusé', abandon:'Abandonné', gagne:'Acquis', archive:'Archivage' };
 const gLabel = { go:'✅ GO', limite:'⚠️ LIMITE', nogo:'❌ NO-GO' };
 
 // ═══ NAVIGATION ═══
 let currentPage = 'dashboard';
 let currentSort = { field: 'date', dir: -1 }; // -1 = desc, 1 = asc
+let currentSort2 = { field: null, dir: -1 }; // tri secondaire, appliqué en cas d'égalité
 let currentBienId = null;
 
 function showPage(page, bienId) {
@@ -409,6 +426,10 @@ function renderBiens(main, biens) {
 function renderBiensTable(biens, limit, mini) {
   const sorted = sortBiens(biens);
   const items = limit ? sorted.slice(0,limit) : sorted;
+  const groupByDate = currentSort.field === 'date';
+  const dateCounts = {};
+  if (groupByDate) items.forEach(b => { dateCounts[b.date] = (dateCounts[b.date]||0) + 1; });
+  let lastDate = null;
   return `
     <div class="section-header">
       <div class="section-title">${mini?'Biens récents':''}</div>
@@ -419,7 +440,13 @@ function renderBiensTable(biens, limit, mini) {
       ${items.length===0?`<div style="padding:48px;text-align:center;color:var(--muted)">Aucun bien — clique sur Simuler depuis LeBonCoin</div>`:
         items.map(b => {
           const c = calcul(b);
-          return `<div class="table-row" onclick="openPreview(${b.id})" style="cursor:pointer">
+          let header = '';
+          if (groupByDate && b.date !== lastDate) {
+            lastDate = b.date;
+            const n = dateCounts[b.date];
+            header = `<div class="date-group-header"><span class="date-group-header-label">${formatDateGroup(b.date)}</span><span class="date-group-header-count">— ${n} bien${n>1?'s':''}</span></div>`;
+          }
+          return `${header}<div class="table-row" onclick="openPreview(${b.id})" style="cursor:pointer">
             <div><div class="bien-name" style="display:flex;align-items:center;gap:6px">${b.nom} <span style="font-size:10px;color:var(--muted);font-weight:400">↗</span></div><div class="bien-addr">${b.adresse}</div></div>
             <div class="prix-m2">${b.surface} m²<br>${c.prixM2Achat.toLocaleString('fr-FR')} €/m²</div>
             <div class="prix-m2">${fmtE(b.prix)}</div>
@@ -923,28 +950,52 @@ function setSort(field) {
   } else {
     currentSort.field = field;
     currentSort.dir = -1;
+    if (currentSort2.field === field) currentSort2.field = null; // évite doublon avec le tri secondaire
   }
   render();
 }
 
+function setSort2(field) {
+  if (currentSort2.field === field) {
+    currentSort2.dir *= -1;
+  } else {
+    currentSort2.field = field;
+    currentSort2.dir = -1;
+  }
+  render();
+}
+
+function clearSort2() {
+  currentSort2.field = null;
+  render();
+}
+
+function getSortValue(b, field) {
+  if (field === 'date') return b.id;
+  if (field === 'prix') return b.prix;
+  if (field === 'margeBrute') return calcul(b).margeBrutePct;
+  if (field === 'margeNette') return calcul(b).margeNettePct;
+  if (field === 'statut') {
+    const order = { gagne:0, offre:1, visite_planifiee:2, attente_agent:3, estimation:4, a_visiter:5, visite:6, prospect:7, refuse:8, abandon:9, archive:10 };
+    return order[b.statut] ?? 9;
+  }
+  if (field === 'like') return b.like?1:0;
+  if (field === 'gonogo') {
+    const order = { go:0, limite:1, nogo:2 };
+    return order[calcul(b).gonogoBrut] ?? 9;
+  }
+  return 0;
+}
+
 function sortBiens(biens) {
-  const { field, dir } = currentSort;
   return [...biens].sort((a, b) => {
-    let va, vb;
-    if (field === 'date') { va = a.id; vb = b.id; }
-    else if (field === 'prix') { va = a.prix; vb = b.prix; }
-    else if (field === 'margeBrute') { va = calcul(a).margeBrutePct; vb = calcul(b).margeBrutePct; }
-    else if (field === 'margeNette') { va = calcul(a).margeNettePct; vb = calcul(b).margeNettePct; }
-    else if (field === 'statut') { 
-      const order = { gagne:0, offre:1, visite_planifiee:2, attente_agent:3, estimation:4, a_visiter:5, visite:6, prospect:7, refuse:8, abandon:9, archive:10 };
-      va = order[a.statut] ?? 9; vb = order[b.statut] ?? 9;
+    const va1 = getSortValue(a, currentSort.field), vb1 = getSortValue(b, currentSort.field);
+    let cmp = (va1 > vb1 ? 1 : va1 < vb1 ? -1 : 0) * currentSort.dir;
+    if (cmp === 0 && currentSort2.field) {
+      const va2 = getSortValue(a, currentSort2.field), vb2 = getSortValue(b, currentSort2.field);
+      cmp = (va2 > vb2 ? 1 : va2 < vb2 ? -1 : 0) * currentSort2.dir;
     }
-    else if (field === 'like') { va = a.like?1:0; vb = b.like?1:0; }
-    else if (field === 'gonogo') { 
-      const order = { go:0, limite:1, nogo:2 };
-      va = order[calcul(a).gonogoBrut] ?? 9; vb = order[calcul(b).gonogoBrut] ?? 9;
-    }
-    return (va > vb ? 1 : va < vb ? -1 : 0) * dir;
+    return cmp;
   });
 }
 
@@ -959,9 +1010,16 @@ function sortBar() {
     { field:'like', label:'❤️ Favoris' },
   ];
   const arrow = currentSort.dir === -1 ? ' ↓' : ' ↑';
+  const arrow2 = currentSort2.dir === -1 ? ' ↓' : ' ↑';
+  const secondaryOptions = sorts.filter(s => s.field !== currentSort.field);
   return `<div class="sort-bar">
     <span class="sort-label">Trier par :</span>
     ${sorts.map(s => `<button class="sort-btn ${currentSort.field===s.field?'active':''}" onclick="setSort('${s.field}')">${s.label}${currentSort.field===s.field?arrow:''}</button>`).join('')}
+  </div>
+  <div class="sort-bar" style="margin-top:6px">
+    <span class="sort-label">Puis par :</span>
+    ${secondaryOptions.map(s => `<button class="sort-btn ${currentSort2.field===s.field?'active':''}" onclick="setSort2('${s.field}')">${s.label}${currentSort2.field===s.field?arrow2:''}</button>`).join('')}
+    ${currentSort2.field?`<button class="sort-btn" onclick="clearSort2()" style="color:var(--red);border-color:var(--red)">✕ Aucun</button>`:''}
   </div>`;
 }
 
