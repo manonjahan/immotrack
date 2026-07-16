@@ -571,11 +571,11 @@ function renderAnalyse(main, biens) {
               <div class="cmp-col-title">Prix actuel</div>
               <div class="cmp-col-sub">Prix affiché — fixe</div>
             </div>
-            <div class="cmp-row"><div class="cmp-row-label">Prix d'achat</div><div class="cmp-row-value">${fmtE(b.prix)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Prix d'achat</div><div class="cmp-row-value" id="cmpL-prix-${b.id}">${fmtE(b.prix)}</div></div>
             <div class="cmp-row"><div class="cmp-row-label">Frais de notaire</div><div class="cmp-row-value" id="cmpL-notaire-${b.id}">${fmtE(c.notaire)}</div></div>
-            <div class="cmp-row"><div class="cmp-row-label">Travaux estimés</div><div class="cmp-row-value">${fmtE(b.travaux||0)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Travaux estimés</div><div class="cmp-row-value" id="cmpL-travaux-${b.id}">${fmtE(b.travaux||0)}</div></div>
             <div class="cmp-row"><div class="cmp-row-label">Coût total opération</div><div class="cmp-row-value" id="cmpL-coutOp-${b.id}">${fmtE(c.coutTotal)}</div></div>
-            <div class="cmp-row"><div class="cmp-row-label">Prix de revente visé</div><div class="cmp-row-value">${fmtE(b.prixRevente)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Prix de revente visé</div><div class="cmp-row-value" id="cmpL-revente-${b.id}">${fmtE(b.prixRevente)}</div></div>
             <div class="cmp-row"><div class="cmp-row-label">Marge brute</div><div class="cmp-row-value" id="cmpL-margeBrute-${b.id}" style="color:${c.margeBrute>0?'var(--green)':'var(--red)'}">${fmtE(c.margeBrute)} (${fmtP(c.margeBrutePct)})</div></div>
             <div class="cmp-row"><div class="cmp-row-label" style="font-weight:600;color:var(--text)">Marge nette après impôt</div><div class="cmp-row-value big" id="cmpL-margeNette-${b.id}" style="color:${c.margeNette>0?'var(--green)':'var(--red)'}">${fmtE(c.margeNette)} (${fmtP(c.margeNettePct)})</div></div>
             <div class="cmp-verdict" id="cmpL-verdict-wrap-${b.id}" style="background:${c.gonogoNet==='go'?'var(--green-bg)':c.gonogoNet==='limite'?'var(--orange-bg)':'var(--red-bg)'}">
@@ -590,9 +590,9 @@ function renderAnalyse(main, biens) {
             </div>
             <div class="cmp-row"><div class="cmp-row-label">Prix d'offre</div><input class="cmp-offre-input" type="number" id="cmp-offre-${b.id}" value="${b.prixOffreManuel?Math.round(b.prixOffreManuel):(Math.round(c.prixMaxBrute)||b.prix)}" oninput="updateBienField(${b.id},'prixOffreManuel',this.value)"></div>
             <div class="cmp-row"><div class="cmp-row-label">Frais de notaire</div><div class="cmp-row-value" id="cmpR-notaire-${b.id}">—</div></div>
-            <div class="cmp-row"><div class="cmp-row-label">Travaux estimés</div><div class="cmp-row-value">${fmtE(b.travaux||0)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Travaux estimés</div><div class="cmp-row-value" id="cmpR-travaux-${b.id}">${fmtE(b.travaux||0)}</div></div>
             <div class="cmp-row"><div class="cmp-row-label">Coût total opération</div><div class="cmp-row-value" id="cmpR-coutOp-${b.id}">—</div></div>
-            <div class="cmp-row"><div class="cmp-row-label">Prix de revente visé</div><div class="cmp-row-value">${fmtE(b.prixRevente)}</div></div>
+            <div class="cmp-row"><div class="cmp-row-label">Prix de revente visé</div><div class="cmp-row-value" id="cmpR-revente-${b.id}">${fmtE(b.prixRevente)}</div></div>
             <div class="cmp-row"><div class="cmp-row-label">Marge brute</div><div class="cmp-row-value" id="cmpR-margeBrute-${b.id}">—</div></div>
             <div class="cmp-row"><div class="cmp-row-label" style="font-weight:600;color:var(--text)">Marge nette après impôt</div><div class="cmp-row-value big" id="cmpR-margeNette-${b.id}">—</div></div>
             <div class="cmp-row"><div class="cmp-row-label">Négociation vs prix actuel</div><div class="cmp-row-value" id="cmpR-nego-${b.id}">—</div></div>
@@ -904,8 +904,11 @@ function updateComparatif(id, offreVal) {
 
   // Colonne gauche — prix actuel, fixe
   const setL = (key, val) => { const el = document.getElementById('cmpL-'+key+'-'+id); if (el) el.textContent = val; };
+  setL('prix', fmtE(b.prix));
   setL('notaire', fmtE(c.notaire));
+  setL('travaux', fmtE(b.travaux||0));
   setL('coutOp', fmtE(c.coutTotal));
+  setL('revente', fmtE(b.prixRevente));
   setL('margeBrute', fmtE(c.margeBrute)+' ('+fmtP(c.margeBrutePct)+')');
   setL('margeNette', fmtE(c.margeNette)+' ('+fmtP(c.margeNettePct)+')');
   const elVL = document.getElementById('cmpL-verdict-'+id);
@@ -923,7 +926,9 @@ function updateComparatif(id, offreVal) {
   const r = calculOffre(b, offre);
   const setR = (key, val) => { const el = document.getElementById('cmpR-'+key+'-'+id); if (el) el.textContent = val; };
   setR('notaire', fmtE(r.notaire));
+  setR('travaux', fmtE(b.travaux||0));
   setR('coutOp', fmtE(r.coutOp));
+  setR('revente', fmtE(b.prixRevente));
   setR('margeBrute', fmtE(r.margeBrute)+' ('+fmtP(r.margeBrutePct)+')');
   setR('margeNette', fmtE(r.margeNette)+' ('+fmtP(r.margeNettePct)+')');
   const ecartMt = b.prix - offre;
