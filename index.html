@@ -261,6 +261,9 @@
     <div class="nav-item" onclick="showPage('comparaison')"><span class="icon">⚖️</span> Comparaison</div>
     <div class="nav-label" style="margin-top:16px">Analyse</div>
     <div class="nav-item" onclick="showPage('simulateur')"><span class="icon">🧮</span> Simulateur</div>
+    <div class="nav-label" style="margin-top:16px">Données</div>
+    <div class="nav-item" onclick="showPage('referentiel')"><span class="icon">🗺️</span> Référentiel prix</div>
+    <div class="nav-item" onclick="showPage('canaux')"><span class="icon">📡</span> Canaux de sourcing</div>
   </nav>
   <div class="user-section">
     <div class="user-name">Manon Jahan</div>
@@ -357,7 +360,7 @@ function showPage(page, bienId) {
   currentPage = page;
   currentBienId = bienId || null;
   document.querySelectorAll('.nav-item').forEach((el,i) => {
-    el.classList.toggle('active', ['dashboard','biens','comparaison','simulateur'][i] === page);
+    el.classList.toggle('active', ['dashboard','biens','comparaison','simulateur','referentiel','canaux'][i] === page);
   });
   render();
 }
@@ -372,6 +375,8 @@ function render() {
   else if (currentPage === 'analyse') renderAnalyse(main, biens);
   else if (currentPage === 'comparaison') renderComparaison(main, biens);
   else if (currentPage === 'simulateur') renderSimulateur(main);
+  else if (currentPage === 'referentiel') renderReferentiel(main);
+  else if (currentPage === 'canaux') renderCanaux(main);
   // Init simulateur offre après render de la page analyse
   if (currentPage === 'analyse') setTimeout(initSimOffre, 50);
 }
@@ -517,6 +522,7 @@ function renderAnalyse(main, biens) {
       <!-- ② Entrées variables -->
       <div class="analyse-section">
         <div class="analyse-section-title">② Entrées variables</div>
+        <div class="analyse-row"><div class="analyse-row-label">Adresse / secteur</div><input class="analyse-input blue" type="text" value="${b.adresse||''}" style="width:180px;text-align:left;font-family:inherit;font-weight:500" id="a-adresse" oninput="updateBienField(${b.id},'adresse',this.value)"><div class="analyse-row-note">Utilisée pour détecter la commune du référentiel</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Prix d'achat affiché (€)</div><input class="analyse-input blue" type="number" value="${b.prix}" id="a-prix" oninput="updateBienField(${b.id},'prix',this.value)"><div class="analyse-row-note">Prix affiché sur LeBonCoin</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Frais de notaire (€)</div><div class="analyse-row-value"><span id="rv-notaire">${fmtE(c.notaire)}</span></div><div class="analyse-row-note">= Prix × 7,5%</div></div>
         <div class="analyse-row"><div class="analyse-row-label">Travaux estimés (€)</div><input class="analyse-input blue" type="number" value="${b.travaux||''}" placeholder="0" id="a-travaux" oninput="updateBienField(${b.id},'travaux',this.value)"><div class="analyse-row-note">À estimer après visite</div></div>
@@ -533,6 +539,11 @@ function renderAnalyse(main, biens) {
           </div>
           <div class="analyse-row-note">Saisi manuellement depuis DataImmo — remplace DVF${b.prixM2RefVerifie&&b.verifie?' ✅ Actif':''}</div>
         </div>
+      </div>
+
+      <!-- Suggestion référentiel -->
+      <div class="analyse-section full" style="background:transparent;border:none;box-shadow:none">
+        ${buildSuggestionBanner(b)}
       </div>
 
       <!-- ③ Options activables -->
@@ -730,6 +741,10 @@ function updateCalcDisplay(b) {
 
   // Rafraîchit le comparatif prix actuel / offre (conserve l'offre déjà saisie manuellement)
   updateComparatif(b.id);
+
+  // Rafraîchit la bannière de suggestion de mise à jour du référentiel
+  const bannerWrap = document.getElementById('suggestion-banner-'+b.id);
+  if (bannerWrap) bannerWrap.outerHTML = buildSuggestionBanner(b);
 }
 
 // ═══ COMPARAISON ═══
@@ -803,7 +818,306 @@ function renderSim() {
     <div class="gonogo-bar"><div style="font-size:13px;font-weight:600">Verdict marge nette</div><div class="gonogo-badge ${c.gonogoNet}">${gLabel[c.gonogoNet]}</div></div>`;
 }
 
-// ═══ VERIFIE ═══
+// ═══ RÉFÉRENTIEL PRIX SECTEUR ═══
+function getReferentiel() { try { return JSON.parse(localStorage.getItem('immotrack_referentiel')||'{}'); } catch(e) { return {}; } }
+function saveReferentiel(r) { localStorage.setItem('immotrack_referentiel', JSON.stringify(r)); }
+
+function initReferentielDemo() {
+  const ref = getReferentiel();
+  if (Object.keys(ref).length > 0) return;
+  const now = new Date().toISOString();
+  const defaults = {
+    "Saint-Denis": 3900,
+    "Bagnolet": 5800,
+    "Montreuil": 6000,
+    "Pantin": 6000,
+    "Saint-Ouen": 6300,
+    "Le Pré-Saint-Gervais": 6250,
+    "Les Lilas": 6700,
+    "Asnières-sur-Seine": 6400
+  };
+  const init = {};
+  Object.entries(defaults).forEach(([commune, prix]) => {
+    init[commune] = { prixM2: prix, source: 'DVF 2024 (estimation initiale)', dateMaj: now, historique: [] };
+  });
+  saveReferentiel(init);
+}
+
+function normalizeStr(s) {
+  return (s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+}
+
+function extractCommune(adresse) {
+  const ref = getReferentiel();
+  const norm = normalizeStr(adresse);
+  if (!norm) return null;
+  let best = null;
+  Object.keys(ref).forEach(commune => {
+    const cNorm = normalizeStr(commune);
+    if (cNorm && norm.includes(cNorm)) {
+      if (!best || cNorm.length > normalizeStr(best).length) best = commune;
+    }
+  });
+  return best;
+}
+
+function renderReferentiel(main) {
+  const ref = getReferentiel();
+  const communes = Object.keys(ref).sort();
+  main.innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Référentiel prix secteur</div>
+      <div class="page-date">Base de prix au m² par commune — utilisée comme référence dans les analyses</div>
+    </div>
+    <div class="section-header">
+      <div class="section-title">${communes.length} secteur${communes.length>1?'s':''} suivis</div>
+      <button class="btn-add" onclick="ajouterCommuneReferentiel()">+ Ajouter un secteur</button>
+    </div>
+    <div class="biens-table" style="margin-bottom:20px">
+      <div class="table-head" style="grid-template-columns:1.6fr 1fr 1.4fr 1fr 1fr 90px">
+        <div>Commune</div><div>Prix €/m²</div><div>Source</div><div>Dernière MAJ</div><div>Historique</div><div>Actions</div>
+      </div>
+      ${communes.length===0?`<div style="padding:48px;text-align:center;color:var(--muted)">Aucun secteur — ajoute ta première commune</div>`:
+      communes.map(commune => {
+        const e = ref[commune];
+        const hist = e.historique||[];
+        const histId = 'hist-'+normalizeStr(commune).replace(/ /g,'-');
+        return `<div class="table-row" style="grid-template-columns:1.6fr 1fr 1.4fr 1fr 1fr 90px">
+          <div class="bien-name">${commune}</div>
+          <div><input class="analyse-input blue" type="number" value="${e.prixM2}" style="width:100px" onchange="updateReferentielPrix('${commune.replace(/'/g,"\\'")}',this.value,'Manuel')"></div>
+          <div class="prix-m2">${e.source||'—'}</div>
+          <div class="prix-m2">${e.dateMaj?new Date(e.dateMaj).toLocaleDateString('fr-FR'):'—'}</div>
+          <div class="prix-m2">${hist.length} MAJ${hist.length?` <span style="cursor:pointer;color:var(--accent)" onclick="toggleHistorique('${commune.replace(/'/g,"\\'")}')">👁</span>`:''}</div>
+          <div class="action-btns"><button class="action-btn danger" onclick="supprimerCommuneReferentiel('${commune.replace(/'/g,"\\'")}')">🗑</button></div>
+        </div>
+        <div id="${histId}" style="display:none;padding:10px 20px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">
+          ${hist.length?hist.slice().reverse().map(h=>`${new Date(h.date).toLocaleDateString('fr-FR')} — ancien prix ${h.prixM2.toLocaleString('fr-FR')} €/m² (${h.source})`).join('<br>'):'Aucun historique'}
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:12px;color:var(--muted);max-width:640px;line-height:1.6">💡 Ce référentiel sert de base pour la "Référence marché m²" lors de l'ajout d'un bien (détection automatique de la commune depuis l'adresse). Quand tu renseignes un prix vérifié sur un bien et que l'écart avec ce référentiel est significatif, une suggestion de mise à jour apparaît sur la fiche du bien — à toi de la valider ou de l'ignorer.</div>
+  `;
+}
+
+function toggleHistorique(commune) {
+  const id = 'hist-'+normalizeStr(commune).replace(/ /g,'-');
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display==='none'?'block':'none';
+}
+
+function updateReferentielPrix(commune, value, source) {
+  const ref = getReferentiel();
+  if (!ref[commune]) return;
+  const val = parseFloat(value);
+  if (isNaN(val) || val<=0) { render(); return; }
+  ref[commune].historique = ref[commune].historique || [];
+  ref[commune].historique.push({ date:new Date().toISOString(), prixM2: ref[commune].prixM2, source: ref[commune].source||'—' });
+  ref[commune].prixM2 = val;
+  ref[commune].source = source || 'Manuel';
+  ref[commune].dateMaj = new Date().toISOString();
+  saveReferentiel(ref);
+  render();
+}
+
+function ajouterCommuneReferentiel() {
+  const nom = prompt('Nom de la commune :');
+  if (!nom || !nom.trim()) return;
+  const prix = parseFloat(prompt('Prix au m² de référence (€) :'));
+  if (isNaN(prix) || prix<=0) { alert('Prix invalide'); return; }
+  const ref = getReferentiel();
+  ref[nom.trim()] = { prixM2: prix, source:'Manuel', dateMaj:new Date().toISOString(), historique:[] };
+  saveReferentiel(ref);
+  render();
+}
+
+function supprimerCommuneReferentiel(commune) {
+  if (!confirm(`Supprimer le secteur "${commune}" du référentiel ?`)) return;
+  const ref = getReferentiel();
+  delete ref[commune];
+  saveReferentiel(ref);
+  render();
+}
+
+// Bannière de suggestion de mise à jour du référentiel, affichée sur la fiche d'analyse d'un bien
+function buildSuggestionBanner(b) {
+  const ref = getReferentiel();
+  const commune = extractCommune(b.adresse);
+  if (!commune || !b.verifie || !b.prixM2RefVerifie || !ref[commune]) return `<div id="suggestion-banner-${b.id}"></div>`;
+  const refPrix = ref[commune].prixM2;
+  const ecart = refPrix>0 ? Math.abs(b.prixM2RefVerifie - refPrix) / refPrix : 0;
+  if (ecart < 0.02 || b.refSuggestionIgnoreValue === b.prixM2RefVerifie) return `<div id="suggestion-banner-${b.id}"></div>`;
+  const hausse = b.prixM2RefVerifie > refPrix;
+  const ecartPct = ((b.prixM2RefVerifie/refPrix-1)*100).toFixed(1);
+  return `<div id="suggestion-banner-${b.id}" style="background:var(--blue-bg);border:1px solid var(--accent);border-radius:12px;padding:14px 18px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+    <div style="font-size:13px;color:var(--text)">
+      <strong>🔵 Suggestion de mise à jour du référentiel — ${commune}</strong><br>
+      <span style="color:var(--muted)">Prix actuel en base : ${refPrix.toLocaleString('fr-FR')} €/m² → Prix constaté sur ce bien : ${b.prixM2RefVerifie.toLocaleString('fr-FR')} €/m² (${hausse?'+':''}${ecartPct}%)</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="action-btn" style="border-color:var(--accent);color:var(--accent)" onclick="appliquerSuggestionReferentiel(${b.id})">✓ Mettre à jour le référentiel</button>
+      <button class="action-btn" onclick="ignorerSuggestionReferentiel(${b.id})">Ignorer</button>
+    </div>
+  </div>`;
+}
+
+function appliquerSuggestionReferentiel(id) {
+  const biens = getBiens();
+  const b = biens.find(x=>x.id===id);
+  if (!b) return;
+  const commune = extractCommune(b.adresse);
+  if (!commune) return;
+  updateReferentielPrix(commune, b.prixM2RefVerifie, 'Vérifié terrain — '+b.nom);
+}
+
+function ignorerSuggestionReferentiel(id) {
+  const biens = getBiens();
+  const idx = biens.findIndex(x=>x.id===id);
+  if (idx<0) return;
+  biens[idx].refSuggestionIgnoreValue = biens[idx].prixM2RefVerifie;
+  saveBiens(biens);
+  const el = document.getElementById('suggestion-banner-'+id);
+  if (el) el.outerHTML = `<div id="suggestion-banner-${id}"></div>`;
+}
+
+// ═══ CANAUX DE SOURCING (tableau de bord multi-sites/agences) ═══
+function getCanaux() { try { return JSON.parse(localStorage.getItem('immotrack_canaux')||'[]'); } catch(e) { return []; } }
+function saveCanaux(c) { localStorage.setItem('immotrack_canaux', JSON.stringify(c)); }
+
+const canalStatutLabel = { a_activer:'À activer', actif:'Actif', en_pause:'En pause' };
+const canalFreqLabel = { 1:'Quotidien', 3:'2-3x / semaine', 7:'Hebdomadaire', 14:'Bi-mensuel', 30:'Mensuel' };
+
+function initCanauxDemo() {
+  if (getCanaux().length > 0) return;
+  saveCanaux([
+    { id:1, nom:"LeBonCoin (script prix m²)", type:"Veille quotidienne", url:"https://www.leboncoin.fr", statut:"actif", frequenceJours:1, derniereConsultation:null, notes:"Script findCards() à réparer — cassé suite à une mise à jour du DOM LBC" },
+    { id:2, nom:"Bien'ici", type:"Portail multi-agences", url:"https://www.bienici.com", statut:"a_activer", frequenceJours:3, derniereConsultation:null, notes:"Filtrer par budget 300k€ et mot-clé 'à rénover / à rafraîchir'" },
+    { id:3, nom:"SeLoger / Logic-Immo", type:"Portail multi-agences", url:"https://www.seloger.com", statut:"a_activer", frequenceJours:3, derniereConsultation:null, notes:"" },
+    { id:4, nom:"PAP.fr", type:"Portail particuliers", url:"https://www.pap.fr", statut:"a_activer", frequenceJours:3, derniereConsultation:null, notes:"Pas de frais d'agence intégré au prix — bon indicateur de prix net vendeur" },
+    { id:5, nom:"Immobilier.notaires.fr", type:"Notaires (classique + interactif)", url:"https://www.immobilier.notaires.fr", statut:"a_activer", frequenceJours:7, derniereConsultation:null, notes:"Inclut les ventes interactives (encan) — souvent successions" },
+    { id:6, nom:"Interencheres / Licitor", type:"Enchères judiciaires", url:"https://www.interencheres.com", statut:"a_activer", frequenceJours:14, derniereConsultation:null, notes:"Process spécifique à maîtriser avant de se lancer" },
+    { id:7, nom:"Off-Market Immobilier", type:"Off-market", url:"https://www.off-market-immobilier.fr", statut:"a_activer", frequenceJours:7, derniereConsultation:null, notes:"Inscription avec critères budget/secteur — à faire" },
+    { id:8, nom:"Réseau Off-Market", type:"Off-market", url:"https://reseau-offmarket.com", statut:"a_activer", frequenceJours:7, derniereConsultation:null, notes:"Inscription à faire" },
+    { id:9, nom:"Mandataires IAD / Optimhome / Efficity", type:"Contact direct", url:"", statut:"a_activer", frequenceJours:14, derniereConsultation:null, notes:"Contacter 3-4 mandataires actifs sur Saint-Denis avec critères précis" },
+    { id:10, nom:"Agences indépendantes Saint-Denis (terrain)", type:"Agence locale", url:"", statut:"a_activer", frequenceJours:14, derniereConsultation:null, notes:"Visite en personne — se présenter comme acheteuse récurrente, financement prêt" }
+  ]);
+}
+
+function joursDepuis(dateStr) {
+  if (!dateStr) return Infinity;
+  const d = new Date(dateStr+'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((today - d)/86400000);
+}
+
+function renderCanaux(main) {
+  const canaux = getCanaux();
+  const actifs = canaux.filter(c=>c.statut==='actif').length;
+  const aActiver = canaux.filter(c=>c.statut==='a_activer').length;
+  const enRetard = canaux.filter(c=>c.statut==='actif' && joursDepuis(c.derniereConsultation) > c.frequenceJours).length;
+
+  main.innerHTML = `
+    <div class="page-header">
+      <div class="page-title">Canaux de sourcing</div>
+      <div class="page-date">Vue centralisée de tous les sites, agences et réseaux suivis</div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Canaux suivis</div><div class="kpi-value">${canaux.length}</div><div class="kpi-sub">tous statuts confondus</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Actifs</div><div class="kpi-value">${actifs}</div><div class="kpi-sub">en cours de veille</div></div>
+      <div class="kpi-card orange"><div class="kpi-label">À activer</div><div class="kpi-value">${aActiver}</div><div class="kpi-sub">inscription / mise en place à faire</div></div>
+      <div class="kpi-card" style="${enRetard>0?'border-color:var(--red)':''}"><div class="kpi-label" style="${enRetard>0?'color:var(--red)':''}">En retard</div><div class="kpi-value" style="${enRetard>0?'color:var(--red)':''}">${enRetard}</div><div class="kpi-sub">au-delà de la fréquence cible</div></div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">${canaux.length} canal${canaux.length>1?'ux':''} de sourcing</div>
+      <button class="btn-add" onclick="ajouterCanal()">+ Ajouter un canal</button>
+    </div>
+    <div class="biens-table">
+      <div class="table-head" style="grid-template-columns:1.6fr 1.3fr 110px 130px 150px 1.4fr 110px">
+        <div>Canal</div><div>Type</div><div>Statut</div><div>Fréquence cible</div><div>Dernière consultation</div><div>Notes</div><div>Actions</div>
+      </div>
+      ${canaux.length===0?`<div style="padding:48px;text-align:center;color:var(--muted)">Aucun canal — ajoute ton premier site ou réseau</div>`:
+      canaux.map(c => {
+        const retard = c.statut==='actif' && joursDepuis(c.derniereConsultation) > c.frequenceJours;
+        return `<div class="table-row" style="grid-template-columns:1.6fr 1.3fr 110px 130px 150px 1.4fr 110px">
+          <div>
+            <div class="bien-name">${c.url?`<a href="${c.url}" target="_blank" style="color:var(--text);text-decoration:none">${c.nom} <span style="font-size:10px;color:var(--muted)">↗</span></a>`:c.nom}</div>
+          </div>
+          <div class="prix-m2" style="font-family:inherit;color:var(--muted)">${c.type}</div>
+          <div>
+            <select class="analyse-select" style="font-size:11px;padding:4px 8px" onchange="updateCanalField(${c.id},'statut',this.value)">
+              ${Object.entries(canalStatutLabel).map(([k,v])=>`<option value="${k}" ${c.statut===k?'selected':''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <select class="analyse-select" style="font-size:11px;padding:4px 8px" onchange="updateCanalField(${c.id},'frequenceJours',this.value)">
+              ${Object.entries(canalFreqLabel).map(([k,v])=>`<option value="${k}" ${String(c.frequenceJours)===k?'selected':''}>${v}</option>`).join('')}
+            </select>
+          </div>
+          <div class="prix-m2" style="font-family:inherit">
+            ${c.derniereConsultation?new Date(c.derniereConsultation).toLocaleDateString('fr-FR'):'Jamais'}
+            ${retard?`<br><span style="color:var(--red);font-size:10px;font-weight:700">⏰ En retard</span>`:''}
+            <br><button class="action-btn" style="margin-top:4px;font-size:10px;padding:3px 7px" onclick="marquerConsulte(${c.id})">✓ Consulté aujourd'hui</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.4">${c.notes||'—'}</div>
+          <div class="action-btns">
+            <button class="action-btn" onclick="modifierNotesCanal(${c.id})">✎</button>
+            <button class="action-btn danger" onclick="supprimerCanal(${c.id})">🗑</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:12px;color:var(--muted);max-width:640px;line-height:1.6">💡 Cette page centralise tous les canaux de sourcing (portails, off-market, notaires, agences, réseaux) avec leur statut et leur fréquence de consultation cible. Marque "Consulté aujourd'hui" à chaque passage pour garder une vue d'ensemble de ta veille et repérer les canaux délaissés.</div>
+  `;
+}
+
+function updateCanalField(id, field, value) {
+  const canaux = getCanaux();
+  const idx = canaux.findIndex(c=>c.id===id);
+  if (idx<0) return;
+  canaux[idx][field] = field==='frequenceJours' ? parseInt(value) : value;
+  saveCanaux(canaux);
+  render();
+}
+
+function marquerConsulte(id) {
+  const canaux = getCanaux();
+  const idx = canaux.findIndex(c=>c.id===id);
+  if (idx<0) return;
+  canaux[idx].derniereConsultation = new Date().toISOString().split('T')[0];
+  saveCanaux(canaux);
+  render();
+}
+
+function modifierNotesCanal(id) {
+  const canaux = getCanaux();
+  const idx = canaux.findIndex(c=>c.id===id);
+  if (idx<0) return;
+  const nouvelleNote = prompt('Notes :', canaux[idx].notes||'');
+  if (nouvelleNote === null) return;
+  canaux[idx].notes = nouvelleNote;
+  saveCanaux(canaux);
+  render();
+}
+
+function ajouterCanal() {
+  const nom = prompt('Nom du canal (site, agence, réseau) :');
+  if (!nom || !nom.trim()) return;
+  const type = prompt('Type (ex: Portail multi-agences, Off-market, Agence locale, Notaires...) :') || '';
+  const url = prompt('Lien (optionnel) :') || '';
+  const canaux = getCanaux();
+  canaux.push({ id:Date.now(), nom:nom.trim(), type:type.trim(), url:url.trim(), statut:'a_activer', frequenceJours:7, derniereConsultation:null, notes:'' });
+  saveCanaux(canaux);
+  render();
+}
+
+function supprimerCanal(id) {
+  if (!confirm('Supprimer ce canal de sourcing ?')) return;
+  saveCanaux(getCanaux().filter(c=>c.id!==id));
+  render();
+}
+
+
 function toggleVerifie(id) {
   const biens = getBiens();
   const idx = biens.findIndex(b => b.id === id);
@@ -869,9 +1183,17 @@ function ajouterBien() {
 // API LBC
 window.addBienFromLBC=function(data){
   const biens=getBiens();
+  let prixM2Ref = data.prixM2Ref || 0;
+  if (!prixM2Ref && data.adresse) {
+    const commune = extractCommune(data.adresse);
+    if (commune) {
+      const ref = getReferentiel();
+      if (ref[commune]) prixM2Ref = ref[commune].prixM2;
+    }
+  }
   const newB={
     id:Date.now(), nom:data.titre||'Bien LBC', adresse:data.adresse||'', prix:data.prix||0,
-    surface:data.surface||0, travaux:0, prixRevente:data.prixRevente||0, prixM2Ref:data.prixM2Ref||0,
+    surface:data.surface||0, travaux:0, prixRevente:data.prixRevente||0, prixM2Ref:prixM2Ref,
     fraisAgence:false, tauxAgence:0.04, interets:false, montantEmprunte:Math.round((data.prix||0)*0.8),
     tauxInteret:0.035, dureefranchise:12, loyer:0, tauxNotaire:0.075, tauxPV:0.362, margeCibleNette:0.15, margeCibleBrute:0.20,
     statut:'prospect', notes:'Importé depuis LBC — '+new Date().toLocaleDateString('fr-FR'),
@@ -1262,6 +1584,8 @@ function checkURLHash() {
 }
 
 initDemo();
+initReferentielDemo();
+initCanauxDemo();
 checkURLHash();
 render();
 </script>
